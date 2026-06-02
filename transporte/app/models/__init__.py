@@ -3,3 +3,8 @@ from .planejamento import Planejamento
 from .usuario import Usuario
 from .instituicao import Instituicao
 from .perfil_passageiro import PerfilPassageiro
+from .perfil_motorista import PerfilMotorista
+from .confirmacao import Confirmacao
+from .advertencia import Advertencia
+from .alocacao_instituicao import AlocacaoInstituicao
+from .alocacao_veiculo import AlocacaoVeiculo
