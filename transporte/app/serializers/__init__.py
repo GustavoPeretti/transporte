@@ -1,2 +1,3 @@
 from .planejamento import PlanejamentoSerializer
 from .instituicao import InstituicaoSerializer
+from .perfil_passageiro import PerfilPassageiroSerializer

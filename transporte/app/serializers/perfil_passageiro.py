@@ -1,0 +1,7 @@
+from rest_framework import serializers
+from ..models import PerfilPassageiro
+
+class PerfilPassageiroSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PerfilPassageiro
+        fields = ["id", "usuario_id", "cpf", "nome", "instituicao_id", "comprovante_matricula"]
