@@ -1,5 +1,4 @@
 from django.db import models
-from app.models import Veiculo, Planejamento, Instituicao
 
 class PerfilMotorista(models.Model):
     usuario_id = models.AutoField(primary_key=True)

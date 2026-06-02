@@ -8,3 +8,4 @@ class Veiculo(models.Model):
     capacidade = models.IntegerField()
     modelo = models.CharField(max_length=50)
     tipo = models.CharField(max_length=20, choices=TipoVeiculoEnum.choices, default=TipoVeiculoEnum.ONIBUS)
+    
