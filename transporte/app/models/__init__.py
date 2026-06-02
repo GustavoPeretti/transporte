@@ -1,0 +1,2 @@
+from .veiculo import Veiculo
+
