@@ -7,7 +7,7 @@ class Planejamento(models.Model):
     def __str__(self):
         return f"Planejamento {self.id} - {self.data}"
     
-class Meta:
-    verbose_name = "Planejamento"
-    verbose_name_plural = "Planejamentos"
+    class Meta:
+        verbose_name = "Planejamento"
+        verbose_name_plural = "Planejamentos"
     
