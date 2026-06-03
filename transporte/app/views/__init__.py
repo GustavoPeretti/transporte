@@ -1,0 +1,1 @@
+from .veiculo import VeiculoViewSet

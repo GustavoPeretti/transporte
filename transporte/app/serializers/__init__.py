@@ -1,4 +1,5 @@
 from .planejamento import PlanejamentoSerializer
+from .veiculo import VeiculoSerializer
 from .instituicao import InstituicaoSerializer
 from .perfil_passageiro import PerfilPassageiroSerializer
 from .alocacao_veiculo import AlocacaoVeiculoSerializer
