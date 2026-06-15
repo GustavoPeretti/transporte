@@ -7,4 +7,4 @@ class AlocacaoInstituicao(models.Model):
     instituicao = models.ForeignKey(Instituicao, on_delete=models.CASCADE, related_name="alocacoes")
 
     def __str__(self):
-        return f"AlocacaoInstituicao {self.id}"
+        return f"{self.instituicao} - {self.alocacao_veiculo.veiculo} - {self.alocacao_veiculo.planejamento}"

@@ -4,5 +4,4 @@ from ..models import PerfilMotorista
 class PerfilMotoristaSerializer(serializers.ModelSerializer):
     class Meta:
         model = PerfilMotorista
-        fields = ["usuario_id", "cpf", "nome", "habilitacao"]
-
+        fields = ["id", "usuario", "habilitacao"]

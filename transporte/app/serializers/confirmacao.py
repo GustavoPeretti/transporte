@@ -4,4 +4,4 @@ from ..models.confirmacao import Confirmacao
 class ConfirmacaoSerializer(serializers.ModelSerializer):
     class Meta:
         model = Confirmacao
-        fields = ['id', 'passageiro', 'data', 'ida', 'retorno', 'presenca_ida', 'presenca_retorno', 'ultima_atualizacao']
+        fields = ['id', 'passageiro', 'planejamento', 'ida', 'retorno', 'presenca_ida', 'presenca_retorno', 'ultima_atualizacao']

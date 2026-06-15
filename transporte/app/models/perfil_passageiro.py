@@ -4,10 +4,9 @@ from .instituicao import Instituicao
 
 class PerfilPassageiro(models.Model):
     usuario = models.ForeignKey(Usuario, on_delete=models.CASCADE)
-    cpf = models.CharField(max_length=11)
-    nome = models.CharField(max_length=255)
     instituicao = models.ForeignKey(Instituicao, on_delete=models.CASCADE)
-    comprovante_matricula = models.CharField(max_length=255)
+    comprovante_matricula = models.FileField()
+    matricula_valida = models.BooleanField(default=False)
 
     def __str__(self):
-        return self.nome
+        return f'{self.usuario.first_name} {self.usuario.last_name}'

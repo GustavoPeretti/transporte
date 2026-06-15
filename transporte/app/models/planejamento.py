@@ -1,7 +1,7 @@
 from django.db import models
 
 class Planejamento(models.Model):
-    data = models.DateTimeField()
+    data = models.DateField()
 
     def __str__(self):
-        return f"Planejamento {self.id} - {self.data}"
+        return self.data.strftime('%Y-%m-%d')
