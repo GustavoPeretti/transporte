@@ -4,4 +4,4 @@ from ..models import AlocacaoVeiculo
 class AlocacaoVeiculoSerializer(serializers.ModelSerializer):
     class Meta:
         model = AlocacaoVeiculo
-        fields = ["id", "planejamento", "motorista", "veiculo"]
+        fields = ["id", "planejamento", "motorista", "veiculo", "embarque"]

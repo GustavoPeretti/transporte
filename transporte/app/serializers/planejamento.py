@@ -4,4 +4,4 @@ from ..models import Planejamento
 class PlanejamentoSerializer(serializers.ModelSerializer):
     class Meta:
         model = Planejamento
-        fields = ["id", "data"]
+        fields = ["id", "data", "aberto"]
