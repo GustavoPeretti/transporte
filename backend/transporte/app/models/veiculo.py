@@ -1,5 +1,5 @@
 from django.db import models
-from app.enums.tipo_veiculo import TipoVeiculoEnum
+from ..enums.tipo_veiculo import TipoVeiculoEnum
 
 class Veiculo(models.Model):
     placa = models.CharField(max_length=10, unique=True)
