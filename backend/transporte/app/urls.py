@@ -1,4 +1,7 @@
+from django.urls import path
+from django.urls import path
 from rest_framework.routers import DefaultRouter
+from rest_framework.authtoken.views import obtain_auth_token
 from .views import (
     VeiculoViewSet,
     PlanejamentoViewSet,
@@ -11,6 +14,7 @@ from .views import (
     AlocacaoVeiculoViewSet,
     AlocacaoInstituicaoViewSet,
 )
+from .views.auth import CurrentUserView, CsrfTokenView, ObtainAuthTokenView
 
 router = DefaultRouter()
 router.register(r'veiculos', VeiculoViewSet)
@@ -24,4 +28,8 @@ router.register(r'advertencias', AdvertenciaViewSet)
 router.register(r'alocacoes-veiculo', AlocacaoVeiculoViewSet)
 router.register(r'alocacoes-instituicao', AlocacaoInstituicaoViewSet)
 
-urlpatterns = router.urls
+urlpatterns = router.urls + [
+    path('auth/token/', ObtainAuthTokenView.as_view()),
+    path('auth/csrf/', CsrfTokenView.as_view()),
+    path('auth/me/', CurrentUserView.as_view()),
+]

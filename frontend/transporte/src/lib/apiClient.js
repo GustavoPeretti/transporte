@@ -8,15 +8,40 @@ function authHeaders() {
   return token ? { Authorization: `Token ${token}` } : {}
 }
 
+function getCsrfToken() {
+  const match = document.cookie.match(/(^|;)\s*csrftoken=([^;]+)/)
+  return match ? match[2] : null
+}
+
+async function ensureCsrfToken() {
+  const csrfToken = getCsrfToken()
+  if (csrfToken) return csrfToken
+  await fetch(`${API_BASE_URL}/auth/csrf/`, {
+    method: 'GET',
+    credentials: 'include',
+  })
+  return getCsrfToken()
+}
+
 async function request(path, { method = 'GET', body, headers } = {}) {
   const isFormData = body instanceof FormData
+  const defaultHeaders = {
+    ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
+    ...authHeaders(),
+    ...headers,
+  }
+
+  if (method !== 'GET' && method !== 'HEAD' && !isFormData) {
+    const csrfToken = await ensureCsrfToken()
+    if (csrfToken) {
+      defaultHeaders['X-CSRFToken'] = csrfToken
+    }
+  }
+
   const res = await fetch(`${API_BASE_URL}${path}`, {
     method,
-    headers: {
-      ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
-      ...authHeaders(),
-      ...headers,
-    },
+    credentials: 'include',
+    headers: defaultHeaders,
     body: isFormData ? body : body != null ? JSON.stringify(body) : undefined,
   })
 

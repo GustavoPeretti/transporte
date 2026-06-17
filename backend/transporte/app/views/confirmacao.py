@@ -1,6 +1,5 @@
-# backend/transporte/app/views/confirmacao.py
-
 from rest_framework import viewsets, status
+from rest_framework.authentication import TokenAuthentication
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from ..models import Confirmacao
@@ -10,6 +9,7 @@ import datetime
 
 
 class ConfirmacaoViewSet(viewsets.ModelViewSet):
+    authentication_classes = [TokenAuthentication]
     queryset = Confirmacao.objects.all()
     serializer_class = ConfirmacaoSerializer
 
