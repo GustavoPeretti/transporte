@@ -2,79 +2,88 @@
 
 Interface web responsiva (desktop e mobile) em **React 19 + Vite + Tailwind CSS v4**,
 com **React Router** para navegação. A estrutura é modular e a camada de serviços
-espelha exatamente os endpoints do backend Django REST.
+consome diretamente a API do backend Django REST.
 
 ## Como rodar
 
+Suba o **backend** e o **frontend** juntos.
+
 ```bash
+# 1) Backend (Django) — na pasta backend/transporte
+python manage.py runserver        # http://localhost:8000
+
+# 2) Frontend — nesta pasta
 npm install
-npm run dev      # ambiente de desenvolvimento (http://localhost:5173)
-npm run build    # build de produção
-npm run lint     # análise estática
+npm run dev                       # http://localhost:5173
 ```
 
-## Modo de dados (mock x API real)
+Em desenvolvimento o Vite faz **proxy** de `/api` e `/media` para
+`http://localhost:8000` (ver `vite.config.js`), então as chamadas são
+same-origin e não exigem CORS.
 
-Enquanto o backend ainda **não** expõe login/CORS, a aplicação roda com dados
-simulados (`src/mock/db.js`). O comportamento é controlado em `src/config.js`:
+> Para acessar pelo celular: `npm run dev -- --host` e abra o IP da rede
+> mostrado no terminal (PC e celular na mesma Wi-Fi).
 
-- `USE_MOCK = true` (padrão): usa a base em memória.
-- `USE_MOCK = false` (ou `VITE_USE_MOCK=false`): consome a API real em `/api`
-  (o Vite faz proxy para `http://localhost:8000` — ver `vite.config.js`).
+## Autenticação (estado atual)
 
-### Acesso de demonstração (modo mock)
+O backend ainda **não** expõe endpoint de login/token. Por isso o login
+(`src/services/auth.js`) resolve o usuário pelo `username` na lista real de
+`/api/usuarios/` e deriva o papel pelos perfis:
 
-| Usuário      | Senha        | Tela        |
-| ------------ | ------------ | ----------- |
-| `admin`      | `admin`      | Administrador |
-| `motorista`  | `motorista`  | Motorista   |
-| `passageiro` | `passageiro` | Passageiro  |
+- tem `PerfilMotorista` → **motorista**
+- tem `PerfilPassageiro` → **passageiro**
+- nenhum dos dois → **administrador**
+
+A **senha ainda não é validada**. Cadastre usuários e perfis pelo admin do
+Django (`/admin`). Quando o backend tiver autenticação (ex.: DRF authtoken),
+basta ajustar `services/auth.js` e o `apiClient` já envia o header `Token`.
+
+## Rotas da API consumidas
+
+CRUDs padrão (DRF router): `veiculos`, `planejamentos`, `usuarios`,
+`instituicoes`, `perfis-passageiro`, `perfis-motorista`, `confirmacoes`,
+`advertencias`, `alocacoes-veiculo`, `alocacoes-instituicao`.
+
+**Rotas especiais:**
+
+1. `POST /api/confirmacoes/registrar-embarque/` — registra presença
+   `{ data, id_passageiro, tipo: 'ida' | 'retorno' }` (tela do Motorista, QR/manual).
+2. `POST /api/planejamentos/{id}/organizar/` — alocação automática
+   (botão "Organizar automaticamente" no Admin).
 
 ## Estrutura
 
 ```
 src/
-  config.js              # USE_MOCK, base da API, papéis e rotas iniciais
+  config.js              # base da API, papéis e rotas iniciais
   lib/
     apiClient.js         # wrapper de fetch (base URL, token, erros)
     dates.js             # utilitários de semana/data (domingo..sábado)
-  services/              # 1 arquivo por recurso, alterna mock x API real
+  services/              # 1 arquivo por recurso, consome a API real
     auth, veiculos, instituicoes, perfis,
     planejamentos, alocacoes, confirmacoes, advertencias
-  mock/db.js             # base de dados em memória (espelha os serializers)
   context/AuthContext.jsx
   hooks/useSemana.js
   components/
     ui/                  # Button, Card, Modal, Toggle, Badge, Spinner
     layout/              # AppShell, TopBar
-    WeekStrip.jsx        # faixa de seleção semanal (admin e passageiro)
+    WeekStrip.jsx        # faixa de seleção semanal
+    QrScanner.jsx        # leitor de QR via câmera (html5-qrcode)
     ProtectedRoute.jsx
   pages/
     LoginPage.jsx        # login único, redireciona por papel
-    admin/               # dashboard de planejamento/alocação
-    motorista/           # embarque do dia + registrar embarque
-    passageiro/          # embarque, grade ida/volta e advertências
+    admin/               # dashboard de planejamento/alocação + PDF
+    motorista/           # embarque do dia + registrar embarque (QR)
+    passageiro/          # embarque, grade ida/volta, advertências, carteirinha
 ```
 
-## Telas implementadas
+## Pendências conhecidas no backend
 
-- **Login** único; redireciona conforme o papel do usuário.
-- **Administrador**: planejamento semanal (abrir/fechar dia), total de alunos,
-  alocação automática/manual de veículos, vínculo de instituições e geração da
-  lista de passageiros. CRUDs simples e regras de negócio ficam no admin do Django.
-- **Motorista**: embarque do dia, abas Veículo/Instituições e **registrar embarque**
-  (checklist de presença).
-- **Passageiro**: embarque do dia, grade de confirmação Ida/Volta da semana e
-  advertências.
-
-## O que falta no backend para a integração real
-
-A camada de serviços já está pronta para a API atual, mas para `USE_MOCK = false`
-funcionar de ponta a ponta o backend precisa de:
-
-1. **Autenticação na API** (ex.: `rest_framework.authtoken`) com endpoint de login
-   que devolva um token — ver `services/auth.js` (`loginReal`).
-2. **CORS** habilitado (`django-cors-headers`) para o front em `localhost:5173`.
-3. **Identificação do papel** do usuário logado (admin/motorista/passageiro).
-   Hoje é derivada da existência de `PerfilMotorista`/`PerfilPassageiro` em
-   `carregarSessaoReal`; um endpoint `/api/me/` simplificaria isso.
+- **`Advertencia` sem campo `justificativa`**: o botão "Justificar" do passageiro
+  envia `PATCH /advertencias/{id}/`, mas o valor não persiste até o campo ser
+  adicionado ao modelo + serializer.
+- **Rota `organizar`**: o `PlanejamentoService.organizar_planejamento`
+  consulta `Confirmacao.objects...values('instituicao')` (campo inexistente em
+  `Confirmacao`; deveria ser `passageiro__instituicao`) e não retorna status no
+  caminho de sucesso (retorna `None`, e a view acessa `.name`). Enquanto isso, o
+  botão "Organizar automaticamente" exibirá erro.

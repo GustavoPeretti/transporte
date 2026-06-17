@@ -4,10 +4,11 @@ import datetime
 from django.db.models import Q, Count
 
 class OrganizacaoPlanejamentoStatus(Enum):
-    NAO_EXISTE = 0
-    FECHADO = 1
-    SEM_VEICULO_COM_ESPACO = 2
-    MOTORISTAS_INSUFICIENTES = 3
+    OK = 0
+    NAO_EXISTE = 1
+    FECHADO = 2
+    SEM_VEICULO_COM_ESPACO = 3
+    MOTORISTAS_INSUFICIENTES = 4
 
 class PlanejamentoService:
     @staticmethod
@@ -37,8 +38,8 @@ class PlanejamentoService:
                 planejamento=planejamento
             ).filter(
                 Q(ida=True) | Q(retorno=True)
-            ).values('instituicao').annotate(
-                demanda=Count('instituicao')
+            ).values('passageiro__instituicao').annotate(
+                demanda=Count('passageiro__instituicao')
             )
         )
 
@@ -97,5 +98,7 @@ class PlanejamentoService:
             for instituicao in veiculo['instituicoes']:
                 AlocacaoInstituicao.objects.create(
                     alocacao_veiculo=alocacao_veiculo,
-                    instituicao_id=instituicao['instituicao'],
+                    instituicao_id=instituicao['passageiro__instituicao'],
                 )
+
+        return OrganizacaoPlanejamentoStatus.OK

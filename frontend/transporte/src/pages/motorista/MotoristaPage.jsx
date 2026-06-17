@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import AppShell from '../../components/layout/AppShell'
 import Card from '../../components/ui/Card'
 import Badge from '../../components/ui/Badge'
-import Button from '../../components/ui/Button'
 import Modal from '../../components/ui/Modal'
 import Spinner from '../../components/ui/Spinner'
 import QrScanner from '../../components/QrScanner'
@@ -15,16 +14,25 @@ import { confirmacoesService } from '../../services/confirmacoes'
 import { perfisService } from '../../services/perfis'
 import { formatTime, toISODate, formatDayMonth } from '../../lib/dates'
 
+// Mensagens dos status retornados pela rota especial /registrar-embarque/.
+const MSG_EMBARQUE = {
+  JA_EMBARCADO: 'Passageiro já havia embarcado.',
+  VIAGEM_NAO_CONFIRMADA: 'Passageiro não confirmou esta viagem.',
+  CONFIRMACAO_NAO_ENCONTRADA: 'Passageiro sem confirmação neste dia.',
+  PLANEJAMENTO_FECHADO: 'Planejamento fechado.',
+  PLANEJAMENTO_NAO_EXISTE: 'Não há planejamento para hoje.',
+}
+
 export default function MotoristaPage() {
   const { sessao } = useAuth()
-  const motoristaId = sessao?.perfilMotoristaId ?? 1
+  const motoristaId = sessao?.perfilMotoristaId ?? null
   const hojeISO = toISODate(new Date())
 
   const [carregando, setCarregando] = useState(true)
   const [aba, setAba] = useState('veiculo')      // 'veiculo' | 'ida' | 'volta'
   const [qrAberto, setQrAberto] = useState(false)
   const [qrFeedback, setQrFeedback] = useState(null) // { tipo: 'ok'|'erro', msg }
-  const [qrAba, setQrAba] = useState('ida')          // qual aba disparou o QR
+  const [qrAba, setQrAba] = useState('ida')
 
   const [planejamentos, setPlanejamentos] = useState([])
   const [alocVeiculos, setAlocVeiculos] = useState([])
@@ -84,7 +92,7 @@ export default function MotoristaPage() {
     return instituicoes.filter((i) => ids.includes(i.id))
   }, [alocacao, alocInstituicoes, instituicoes])
 
-  // Monta a lista de passageiros enriquecida (confirmou ida ou retorno).
+  // Passageiros que confirmaram a viagem (ida/retorno) nas instituições da rota.
   const montarLista = useCallback(
     (campo) => {
       if (!alocacao || !planHoje) return []
@@ -106,7 +114,6 @@ export default function MotoristaPage() {
   const passageirosIda = useMemo(() => montarLista('ida'), [montarLista])
   const passageirosVolta = useMemo(() => montarLista('retorno'), [montarLista])
 
-  // Agrupa uma lista por nome da instituição.
   function agruparPorInstituicao(lista) {
     const grupos = {}
     lista.forEach((item) => {
@@ -117,42 +124,50 @@ export default function MotoristaPage() {
     return grupos
   }
 
-  async function marcarPresenca(confirmacao, campoPresenca, valor) {
-    const atualizado = await confirmacoesService.registrarPresenca(confirmacao.id, {
-      [campoPresenca]: valor,
-    })
-    setConfirmacoes((prev) => prev.map((c) => (c.id === atualizado.id ? atualizado : c)))
-  }
+  // Registra o embarque via rota especial. O backend só MARCA presença (não desmarca).
+  const marcar = useCallback(
+    async (perfilId, tipo, nome) => {
+      if (!planHoje) return
+      const campoPresenca = tipo === 'ida' ? 'presenca_ida' : 'presenca_retorno'
+      try {
+        await confirmacoesService.registrarEmbarque({
+          data: planHoje.data,
+          idPassageiro: perfilId,
+          tipo,
+        })
+        setConfirmacoes((prev) =>
+          prev.map((c) => {
+            const perfil = perfisPassageiro.find((p) => p.id === c.passageiro)
+            return c.planejamento === planHoje.id && perfil?.id === perfilId
+              ? { ...c, [campoPresenca]: true }
+              : c
+          }),
+        )
+        setQrFeedback({ tipo: 'ok', msg: `${nome} embarcou! ✓` })
+      } catch (err) {
+        const st = err?.detail?.status
+        setQrFeedback({ tipo: 'erro', msg: MSG_EMBARQUE[st] || 'Erro ao registrar embarque.' })
+      }
+    },
+    [planHoje, perfisPassageiro],
+  )
 
-  // Chamado quando o scanner detecta um QR code.
+  // Scanner: o QR da carteirinha codifica o id do PerfilPassageiro.
   const handleQrScan = useCallback(
     async (texto) => {
       setQrAberto(false)
-      const passageiroId = parseInt(texto, 10)
-      if (isNaN(passageiroId)) {
+      const perfilId = parseInt(texto, 10)
+      if (isNaN(perfilId)) {
         setQrFeedback({ tipo: 'erro', msg: 'QR code inválido.' })
         return
       }
-
-      const campo = qrAba === 'ida' ? 'ida' : 'retorno'
-      const campoPresenca = qrAba === 'ida' ? 'presenca_ida' : 'presenca_retorno'
+      const tipo = qrAba === 'ida' ? 'ida' : 'retorno'
       const lista = qrAba === 'ida' ? passageirosIda : passageirosVolta
-      const item = lista.find((p) => p.perfil.id === passageiroId)
-
-      if (!item) {
-        setQrFeedback({ tipo: 'erro', msg: `Passageiro #${passageiroId} não confirmou ${campo === 'ida' ? 'ida' : 'volta'} hoje.` })
-        return
-      }
-
-      if (item.confirmacao[campoPresenca]) {
-        setQrFeedback({ tipo: 'ok', msg: `${item.usuario?.first_name || 'Passageiro'} já estava marcado como presente.` })
-        return
-      }
-
-      await marcarPresenca(item.confirmacao, campoPresenca, true)
-      setQrFeedback({ tipo: 'ok', msg: `${item.usuario?.first_name || 'Passageiro'} marcado como presente! ✓` })
+      const item = lista.find((p) => p.perfil.id === perfilId)
+      const nome = item?.usuario?.first_name || `Passageiro #${perfilId}`
+      await marcar(perfilId, tipo, nome)
     },
-    [qrAba, passageirosIda, passageirosVolta],
+    [qrAba, passageirosIda, passageirosVolta, marcar],
   )
 
   function abrirQr(abaAtiva) {
@@ -197,13 +212,11 @@ export default function MotoristaPage() {
           </div>
         </Card>
 
-        {/* Feedback do QR scan */}
+        {/* Feedback do embarque */}
         {qrFeedback && (
           <div
             className={`rounded-xl px-4 py-3 text-sm font-medium ${
-              qrFeedback.tipo === 'ok'
-                ? 'bg-emerald-50 text-emerald-700'
-                : 'bg-red-50 text-red-600'
+              qrFeedback.tipo === 'ok' ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-600'
             }`}
           >
             {qrFeedback.msg}
@@ -257,16 +270,14 @@ export default function MotoristaPage() {
 
         {(aba === 'ida' || aba === 'volta') && (
           <ListaEmbarque
+            tipo={aba === 'ida' ? 'ida' : 'retorno'}
             lista={aba === 'ida' ? passageirosIda : passageirosVolta}
             campoPresenca={aba === 'ida' ? 'presenca_ida' : 'presenca_retorno'}
             grupos={agruparPorInstituicao(aba === 'ida' ? passageirosIda : passageirosVolta)}
             onQr={() => abrirQr(aba)}
-            onToggle={(conf, campo) =>
-              marcarPresenca(conf, campo, !conf[campo])
-            }
+            onMarcar={marcar}
           />
         )}
-
       </div>
 
       {/* Modal do scanner QR */}
@@ -282,7 +293,7 @@ export default function MotoristaPage() {
 }
 
 // Lista de passageiros agrupada por instituição com botão de QR e marcação manual.
-function ListaEmbarque({ lista, campoPresenca, grupos, onQr, onToggle }) {
+function ListaEmbarque({ tipo, lista, campoPresenca, grupos, onQr, onMarcar }) {
   const nomes = Object.keys(grupos)
   const totalPresentes = lista.filter((p) => p.confirmacao[campoPresenca]).length
 
@@ -310,22 +321,19 @@ function ListaEmbarque({ lista, campoPresenca, grupos, onQr, onToggle }) {
         nomes.map((nomeInst) => (
           <Card key={nomeInst} title={nomeInst}>
             <ul className="divide-y divide-slate-100">
-              {grupos[nomeInst].map(({ confirmacao, usuario }) => {
+              {grupos[nomeInst].map(({ confirmacao, usuario, perfil }) => {
                 const presente = confirmacao[campoPresenca]
+                const nome = usuario ? `${usuario.first_name} ${usuario.last_name}` : 'Passageiro'
                 return (
-                  <li
-                    key={confirmacao.id}
-                    className="flex items-center justify-between gap-3 py-2.5"
-                  >
-                    <span className="text-sm font-medium text-slate-700">
-                      {usuario ? `${usuario.first_name} ${usuario.last_name}` : 'Passageiro'}
-                    </span>
+                  <li key={confirmacao.id} className="flex items-center justify-between gap-3 py-2.5">
+                    <span className="text-sm font-medium text-slate-700">{nome}</span>
                     <button
                       type="button"
-                      onClick={() => onToggle(confirmacao, campoPresenca)}
+                      disabled={presente}
+                      onClick={() => onMarcar(perfil.id, tipo, usuario?.first_name || nome)}
                       className={`rounded-lg px-3 py-1 text-xs font-semibold transition-colors ${
                         presente
-                          ? 'bg-emerald-600 text-white'
+                          ? 'cursor-default bg-emerald-600 text-white'
                           : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
                       }`}
                     >

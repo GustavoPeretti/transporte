@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { HOME_BY_ROLE, USE_MOCK } from '../config'
+import { HOME_BY_ROLE } from '../config'
 import Button from '../components/ui/Button'
 
 // Tela de login única: após autenticar, redireciona para a home do papel.
@@ -80,13 +80,6 @@ export default function LoginPage() {
             {enviando ? 'Entrando...' : 'Entrar'}
           </Button>
         </form>
-
-        {USE_MOCK && (
-          <div className="mt-4 rounded-xl border border-dashed border-slate-300 bg-slate-50 p-3 text-xs text-slate-500">
-            <p className="mb-1 font-semibold text-slate-600">Acesso de demonstração</p>
-            <p>admin / admin · motorista / motorista · passageiro / passageiro</p>
-          </div>
-        )}
       </div>
     </div>
   )

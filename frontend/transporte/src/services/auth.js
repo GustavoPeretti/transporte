@@ -1,47 +1,27 @@
-import { USE_MOCK, ROLES } from '../config'
+import { ROLES } from '../config'
 import { api } from '../lib/apiClient'
-import { db, mockResponse } from '../mock/db'
 
 // Autenticação.
 //
-// Mock: valida contra as credenciais simuladas e devolve usuário + papel.
-// Real: o backend ainda NÃO expõe endpoint de login/token nem campo de papel.
-// Quando expuser, ajustar `loginReal`/`carregarSessaoReal` abaixo (ex.: usar
-// rest_framework.authtoken em /api/auth/token/ e um endpoint /api/me/).
-
-function login(username, password) {
-  return USE_MOCK ? loginMock(username, password) : loginReal(username, password)
-}
-
-async function loginMock(username, password) {
-  await mockResponse(null, 300)
-  const cred = db.credenciais[username]
-  if (!cred || cred.senha !== password) {
-    const erro = new Error('Usuário ou senha inválidos.')
+// O backend ainda NÃO expõe endpoint de login/token nem campo de papel.
+// Enquanto isso, resolvemos o usuário pelo `username` na lista real de usuários
+// e derivamos o papel a partir dos perfis (motorista/passageiro/admin).
+// A senha ainda não é validada — quando o backend tiver autenticação (ex.: DRF
+// authtoken), trocar `login` para POST /auth/token/ e guardar o token.
+async function login(username /*, password */) {
+  const usuarios = await api.get('/usuarios/')
+  const usuario = usuarios.find((u) => u.username === username)
+  if (!usuario) {
+    const erro = new Error('Usuário não encontrado.')
     erro.status = 401
     throw erro
   }
-  const usuario = db.usuarios.find((u) => u.id === cred.usuarioId)
-  return {
-    token: `mock-token-${username}`,
-    role: cred.role,
-    usuario,
-    perfilMotoristaId: cred.perfilMotoristaId ?? null,
-    perfilPassageiroId: cred.perfilPassageiroId ?? null,
-  }
+  const sessao = await resolverPapel(usuario.id)
+  return { usuario, ...sessao }
 }
 
-// eslint-disable-next-line no-unused-vars
-async function loginReal(username, password) {
-  // TODO(backend): criar endpoint de autenticação (ex.: DRF authtoken).
-  // const { token } = await api.post('/auth/token/', { username, password })
-  // localStorage.setItem('auth_token', token)
-  // return carregarSessaoReal()
-  throw new Error('Login real ainda não disponível: backend sem endpoint de autenticação.')
-}
-
-// Deriva o papel a partir dos perfis existentes (motorista/passageiro) ou staff.
-async function carregarSessaoReal(usuarioId) {
+// Deriva o papel a partir dos perfis existentes; sem perfil = administrador.
+async function resolverPapel(usuarioId) {
   const [motoristas, passageiros] = await Promise.all([
     api.get('/perfis-motorista/'),
     api.get('/perfis-passageiro/'),
@@ -55,4 +35,4 @@ async function carregarSessaoReal(usuarioId) {
   }
 }
 
-export const authService = { login, carregarSessaoReal }
+export const authService = { login }

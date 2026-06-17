@@ -19,10 +19,21 @@ import { confirmacoesService } from '../../services/confirmacoes'
 import { perfisService } from '../../services/perfis'
 import { formatDayMonth, toISODate } from '../../lib/dates'
 
+// Mensagens dos status retornados pela rota especial /planejamentos/{id}/organizar/.
+const MSG_ORGANIZAR = {
+  OK: 'Planejamento organizado automaticamente.',
+  NAO_EXISTE: 'Não há planejamento para este dia.',
+  FECHADO: 'O planejamento está fechado.',
+  SEM_VEICULO_COM_ESPACO: 'Não há veículo com espaço suficiente para a demanda.',
+  MOTORISTAS_INSUFICIENTES: 'Motoristas insuficientes para os veículos necessários.',
+}
+
 export default function AdminDashboard() {
   const semana = useSemana()
   const [selecionado, setSelecionado] = useState(new Date())
   const [carregando, setCarregando] = useState(true)
+  const [organizando, setOrganizando] = useState(false)
+  const [organizarFeedback, setOrganizarFeedback] = useState(null)
   const [listaAberta, setListaAberta] = useState(false)
 
   const [planejamentos, setPlanejamentos] = useState([])
@@ -171,6 +182,31 @@ export default function AdminDashboard() {
     setAlocInstituicoes((prev) => prev.filter((a) => a.id !== id))
   }
 
+  // Rota especial: organiza automaticamente as alocações do dia e recarrega.
+  async function organizarPlanejamento() {
+    if (!planSelecionado || fechado || organizando) return
+    setOrganizando(true)
+    setOrganizarFeedback(null)
+    try {
+      const res = await planejamentosService.organizar(planSelecionado.id)
+      const [av, ai] = await Promise.all([
+        alocacoesService.listarVeiculos(),
+        alocacoesService.listarInstituicoes(),
+      ])
+      setAlocVeiculos(av)
+      setAlocInstituicoes(ai)
+      setOrganizarFeedback({ tipo: 'ok', msg: MSG_ORGANIZAR[res?.status] || 'Planejamento organizado.' })
+    } catch (err) {
+      const st = err?.detail?.status
+      setOrganizarFeedback({
+        tipo: 'erro',
+        msg: MSG_ORGANIZAR[st] || 'Erro ao organizar o planejamento.',
+      })
+    } finally {
+      setOrganizando(false)
+    }
+  }
+
   function gerarPDF() {
     const doc = new jsPDF()
     const dataFormatada = formatDayMonth(selecionado)
@@ -248,10 +284,37 @@ export default function AdminDashboard() {
               {planSelecionado?.aberto ? 'Aberto' : 'Fechado'}
             </span>
           </div>
-          <Button variant="secondary" onClick={() => setListaAberta(true)}>
-            Gerar lista de passageiros
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              disabled={fechado || organizando}
+              onClick={organizarPlanejamento}
+            >
+              {organizando ? 'Organizando...' : 'Organizar automaticamente'}
+            </Button>
+            <Button variant="secondary" onClick={() => setListaAberta(true)}>
+              Gerar lista de passageiros
+            </Button>
+          </div>
         </div>
+
+        {/* Feedback da organização automática */}
+        {organizarFeedback && (
+          <div
+            className={`rounded-xl px-4 py-3 text-sm font-medium ${
+              organizarFeedback.tipo === 'ok'
+                ? 'bg-emerald-50 text-emerald-700'
+                : 'bg-red-50 text-red-600'
+            }`}
+          >
+            {organizarFeedback.msg}
+            <button
+              className="ml-3 text-xs opacity-60 hover:opacity-100"
+              onClick={() => setOrganizarFeedback(null)}
+            >
+              ✕
+            </button>
+          </div>
+        )}
 
         {/* Total de alunos */}
         <Card>

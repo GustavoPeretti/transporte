@@ -1,13 +1,7 @@
 // Configurações globais do frontend.
 //
-// USE_MOCK: enquanto o backend ainda não expõe login/CORS, a aplicação roda
-// com dados simulados (camada em src/mock). Quando o backend estiver pronto,
-// basta trocar para `false` (ou definir VITE_USE_MOCK=false) que toda a camada
-// de serviços passa a consumir a API real em /api.
-export const USE_MOCK = import.meta.env.VITE_USE_MOCK
-  ? import.meta.env.VITE_USE_MOCK === 'true'
-  : true
-
+// Em desenvolvimento, o Vite faz proxy de /api e /media para o backend Django
+// (ver vite.config.js), então as chamadas são same-origin e não exigem CORS.
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api'
 
 // Papéis de usuário usados no roteamento e na exibição das telas.
