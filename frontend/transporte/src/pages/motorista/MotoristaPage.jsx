@@ -19,7 +19,6 @@ const MSG_EMBARQUE = {
   JA_EMBARCADO: 'Passageiro já havia embarcado.',
   VIAGEM_NAO_CONFIRMADA: 'Passageiro não confirmou esta viagem.',
   CONFIRMACAO_NAO_ENCONTRADA: 'Passageiro sem confirmação neste dia.',
-  PLANEJAMENTO_FECHADO: 'Planejamento fechado.',
   PLANEJAMENTO_NAO_EXISTE: 'Não há planejamento para hoje.',
 }
 

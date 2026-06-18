@@ -17,7 +17,7 @@ import { WEEKDAYS_SHORT_PT, formatDayMonth, formatTime, isSameDay, toISODate } f
 
 export default function PassageiroPage() {
   const { sessao } = useAuth()
-  const passageiroId = sessao?.perfilPassageiroId ?? 1
+  const passageiroId = sessao?.perfilPassageiroId
   const semana = useSemana()
   const [selecionado, setSelecionado] = useState(new Date())
 

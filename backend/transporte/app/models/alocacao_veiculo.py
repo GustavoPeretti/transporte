@@ -9,6 +9,9 @@ class AlocacaoVeiculo(models.Model):
     veiculo = models.ForeignKey(Veiculo, on_delete=models.CASCADE)
     embarque = models.TimeField()
 
+    class Meta:
+        unique_together = [('motorista', 'planejamento')]
+
     def __str__(self):
         return f"{self.veiculo} - {self.planejamento}"
     

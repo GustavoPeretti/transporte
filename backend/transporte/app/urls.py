@@ -13,6 +13,7 @@ from .views import (
     AdvertenciaViewSet,
     AlocacaoVeiculoViewSet,
     AlocacaoInstituicaoViewSet,
+    NotificacaoViewSet,
 )
 from .views.auth import CurrentUserView, CsrfTokenView, ObtainAuthTokenView
 
@@ -23,10 +24,11 @@ router.register(r'usuarios', UsuarioViewSet)
 router.register(r'instituicoes', InstituicaoViewSet)
 router.register(r'perfis-passageiro', PerfilPassageiroViewSet)
 router.register(r'perfis-motorista', PerfilMotoristaViewSet)
-router.register(r'confirmacoes', ConfirmacaoViewSet)
+router.register(r'confirmacoes', ConfirmacaoViewSet, basename='confirmacao')
 router.register(r'advertencias', AdvertenciaViewSet)
 router.register(r'alocacoes-veiculo', AlocacaoVeiculoViewSet)
 router.register(r'alocacoes-instituicao', AlocacaoInstituicaoViewSet)
+router.register(r'notificacoes', NotificacaoViewSet, basename='notificacao')
 
 urlpatterns = router.urls + [
     path('auth/token/', ObtainAuthTokenView.as_view()),

@@ -1,10 +1,9 @@
-import { createContext, useContext, useMemo, useState } from 'react'
+import { createContext, useCallback, useContext, useMemo, useState } from 'react'
 import { authService } from '../services/auth'
 
 const AuthContext = createContext(null)
 const STORAGE_KEY = 'auth_session'
 
-// Restaura a sessão salva (de forma síncrona, antes do primeiro render).
 function carregarSessaoInicial() {
   const bruto = localStorage.getItem(STORAGE_KEY)
   if (!bruto) return null
@@ -19,19 +18,19 @@ function carregarSessaoInicial() {
 export function AuthProvider({ children }) {
   const [sessao, setSessao] = useState(carregarSessaoInicial)
 
-  async function login(username, password) {
+  const login = useCallback(async (username, password) => {
     const dados = await authService.login(username, password)
     localStorage.setItem(STORAGE_KEY, JSON.stringify(dados))
     if (dados.token) localStorage.setItem('auth_token', dados.token)
     setSessao(dados)
     return dados
-  }
+  }, [])
 
-  function logout() {
+  const logout = useCallback(() => {
     localStorage.removeItem(STORAGE_KEY)
     localStorage.removeItem('auth_token')
     setSessao(null)
-  }
+  }, [])
 
   const valor = useMemo(
     () => ({
@@ -39,12 +38,11 @@ export function AuthProvider({ children }) {
       usuario: sessao?.usuario ?? null,
       role: sessao?.role ?? null,
       autenticado: Boolean(sessao),
-      // Sessão é resolvida sincronamente na inicialização.
       carregando: false,
       login,
       logout,
     }),
-    [sessao],
+    [sessao, login, logout],
   )
 
   return <AuthContext.Provider value={valor}>{children}</AuthContext.Provider>

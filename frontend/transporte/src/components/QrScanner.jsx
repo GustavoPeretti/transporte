@@ -1,8 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
 
-// Scanner de QR code via câmera do dispositivo.
-// Usa html5-qrcode de forma imperativa dentro de um useEffect para respeitar
-// o ciclo de vida do React sem conflitos de DOM.
 const SCANNER_ID = 'html5qr-scanner-container'
 
 export default function QrScanner({ onScan }) {
@@ -24,11 +21,10 @@ export default function QrScanner({ onScan }) {
           { facingMode: 'environment' },
           { fps: 10, qrbox: { width: 240, height: 240 } },
           (text) => {
-            // Para o scanner ao encontrar um código e avisa o pai.
             scanner.stop().catch(() => {})
             onScan(text)
           },
-          () => {}, // erros por frame (QR não detectado) — ignorados
+          () => {},
         )
         .then(() => { if (!cancelled) setStatus('ativo') })
         .catch((err) => {
@@ -53,7 +49,19 @@ export default function QrScanner({ onScan }) {
       {status === 'erro' && (
         <p className="rounded-xl bg-red-50 px-4 py-3 text-center text-sm text-red-600">{erro}</p>
       )}
-      <div id={SCANNER_ID} className={status === 'ativo' ? 'overflow-hidden rounded-xl' : 'hidden'} />
+
+      {/*
+        O container SEMPRE está no DOM e nunca usa display:none.
+        O html5-qrcode mede offsetWidth/offsetHeight ao inicializar — se o
+        elemento estiver oculto com display:none essas medidas retornam 0 e
+        o vídeo é criado sem dimensões, ficando invisível mesmo após aparecer.
+      */}
+      <div
+        id={SCANNER_ID}
+        className="overflow-hidden rounded-xl"
+        style={{ display: status === 'erro' ? 'none' : 'block' }}
+      />
+
       {status === 'ativo' && (
         <p className="text-center text-xs text-slate-400">Aponte para o QR code da carteirinha</p>
       )}

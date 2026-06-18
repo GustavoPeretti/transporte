@@ -8,3 +8,4 @@ from .confirmacao import Confirmacao
 from .advertencia import Advertencia
 from .alocacao_instituicao import AlocacaoInstituicao
 from .alocacao_veiculo import AlocacaoVeiculo
+from .notificacao import Notificacao

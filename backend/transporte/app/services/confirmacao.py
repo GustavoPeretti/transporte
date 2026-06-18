@@ -1,9 +1,9 @@
 from enum import Enum
 import datetime
-from django.db.models import Q
 
 from ..models.confirmacao import Confirmacao
 from ..models.planejamento import Planejamento
+from ..notifications.observer import NotificacaoSubject  # [PATTERN: OBSERVER]
 
 
 class TipoViagem(Enum):
@@ -14,15 +14,21 @@ class TipoViagem(Enum):
 class RegistroEmbarqueStatus(Enum):
     OK = 0
     PLANEJAMENTO_NAO_EXISTE = 1
-    PLANEJAMENTO_FECHADO = 2
-    CONFIRMACAO_NAO_ENCONTRADA = 3
-    VIAGEM_NAO_CONFIRMADA = 4
-    JA_EMBARCADO = 5
+    CONFIRMACAO_NAO_ENCONTRADA = 2
+    VIAGEM_NAO_CONFIRMADA = 3
+    JA_EMBARCADO = 4
 
 
-class ConfirmacaoService:
-    @staticmethod
+# ============================================================
+# PATTERN: OBSERVER — Subject
+# ============================================================
+class ConfirmacaoService(NotificacaoSubject):
+
+    def __init__(self):
+        super().__init__()
+
     def registrar_embarque(
+        self,
         data: datetime.date,
         id_passageiro: int,
         tipo: TipoViagem,
@@ -31,9 +37,6 @@ class ConfirmacaoService:
 
         if planejamento is None:
             return RegistroEmbarqueStatus.PLANEJAMENTO_NAO_EXISTE
-
-        if not planejamento.aberto:
-            return RegistroEmbarqueStatus.PLANEJAMENTO_FECHADO
 
         confirmacao = Confirmacao.objects.filter(
             planejamento=planejamento,
@@ -57,4 +60,12 @@ class ConfirmacaoService:
             confirmacao.presenca_retorno = True
 
         confirmacao.save()
+
+        # [PATTERN: OBSERVER] — notifica observers registrados
+        self.notificar('EMBARQUE_REGISTRADO', {
+            'data': str(data),
+            'id_passageiro': id_passageiro,
+            'tipo': tipo.value,
+        })
+
         return RegistroEmbarqueStatus.OK

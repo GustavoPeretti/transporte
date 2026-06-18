@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import AppShell from '../../components/layout/AppShell'
@@ -10,6 +11,7 @@ import Spinner from '../../components/ui/Spinner'
 import WeekStrip from '../../components/WeekStrip'
 import VeiculosAlocadosPanel from './components/VeiculosAlocadosPanel'
 import InstituicoesPanel from './components/InstituicoesPanel'
+import CriarUsuarioModal from './components/CriarUsuarioModal'
 import { useSemana } from '../../hooks/useSemana'
 import { planejamentosService } from '../../services/planejamentos'
 import { alocacoesService } from '../../services/alocacoes'
@@ -35,6 +37,8 @@ export default function AdminDashboard() {
   const [organizando, setOrganizando] = useState(false)
   const [organizarFeedback, setOrganizarFeedback] = useState(null)
   const [listaAberta, setListaAberta] = useState(false)
+  const [criarUsuarioAberto, setCriarUsuarioAberto] = useState(false)
+  const [erroCarga, setErroCarga] = useState(false)
 
   const [planejamentos, setPlanejamentos] = useState([])
   const [alocVeiculos, setAlocVeiculos] = useState([])
@@ -69,6 +73,10 @@ export default function AdminDashboard() {
       setPerfisMotorista(pm)
       setPerfisPassageiro(pp)
       setUsuarios(us)
+      setCarregando(false)
+    }).catch(() => {
+      if (!ativo) return
+      setErroCarga(true)
       setCarregando(false)
     })
     return () => { ativo = false }
@@ -252,8 +260,30 @@ export default function AdminDashboard() {
     doc.save(`passageiros-${toISODate(selecionado)}.pdf`)
   }
 
+  const recarregarUsuarios = useCallback(() => {
+    Promise.all([
+      perfisService.listarMotoristas(),
+      perfisService.listarPassageiros(),
+      perfisService.listarUsuarios(),
+    ]).then(([pm, pp, us]) => {
+      setPerfisMotorista(pm)
+      setPerfisPassageiro(pp)
+      setUsuarios(us)
+    })
+  }, [])
+
   if (carregando) {
     return <AppShell title="Administrador"><Spinner /></AppShell>
+  }
+
+  if (erroCarga) {
+    return (
+      <AppShell title="Administrador">
+        <div className="rounded-xl bg-red-50 px-4 py-6 text-center text-sm text-red-600">
+          Erro ao carregar os dados. Recarregue a página.
+        </div>
+      </AppShell>
+    )
   }
 
   return (
@@ -284,7 +314,7 @@ export default function AdminDashboard() {
               {planSelecionado?.aberto ? 'Aberto' : 'Fechado'}
             </span>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Button
               disabled={fechado || organizando}
               onClick={organizarPlanejamento}
@@ -293,6 +323,9 @@ export default function AdminDashboard() {
             </Button>
             <Button variant="secondary" onClick={() => setListaAberta(true)}>
               Gerar lista de passageiros
+            </Button>
+            <Button variant="secondary" onClick={() => setCriarUsuarioAberto(true)}>
+              + Criar usuário
             </Button>
           </div>
         </div>
@@ -347,6 +380,14 @@ export default function AdminDashboard() {
           />
         </div>
       </div>
+
+      {/* Modal: criar motorista ou passageiro em um único formulário */}
+      <CriarUsuarioModal
+        open={criarUsuarioAberto}
+        onClose={() => setCriarUsuarioAberto(false)}
+        instituicoes={instituicoes}
+        onCriado={recarregarUsuarios}
+      />
 
       {/* Modal: lista de passageiros com visualização e geração de PDF */}
       <Modal

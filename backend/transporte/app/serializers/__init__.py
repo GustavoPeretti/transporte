@@ -8,3 +8,4 @@ from .confirmacao import ConfirmacaoSerializer
 from .advertencia import AdvertenciaSerializer
 from .alocacao_veiculo import AlocacaoVeiculoSerializer
 from .alocacao_instituicao import AlocacaoInstituicaoSerializer
+from .notificacao import NotificacaoSerializer

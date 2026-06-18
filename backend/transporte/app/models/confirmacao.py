@@ -7,9 +7,12 @@ class Confirmacao(models.Model):
     planejamento = models.ForeignKey(Planejamento, on_delete=models.CASCADE)
     ida = models.BooleanField()
     retorno = models.BooleanField()
-    presenca_ida = models.BooleanField()
-    presenca_retorno = models.BooleanField()
+    presenca_ida = models.BooleanField(default=False)
+    presenca_retorno = models.BooleanField(default=False)
     ultima_atualizacao = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = [('passageiro', 'planejamento')]
 
     def __str__(self):
         return f'{self.passageiro} - {self.planejamento.data}'

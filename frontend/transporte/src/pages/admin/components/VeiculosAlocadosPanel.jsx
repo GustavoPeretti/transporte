@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import Card from '../../../components/ui/Card'
 import Button from '../../../components/ui/Button'
 import Modal from '../../../components/ui/Modal'
@@ -6,7 +6,6 @@ import Badge from '../../../components/ui/Badge'
 import { TIPO_VEICULO_LABEL } from '../../../services/veiculos'
 import { formatTime } from '../../../lib/dates'
 
-// Painel "Veículos alocados" do dia selecionado, com adição/remoção.
 export default function VeiculosAlocadosPanel({
   alocacoes,
   veiculos,
@@ -20,6 +19,12 @@ export default function VeiculosAlocadosPanel({
   const [motoristaId, setMotoristaId] = useState('')
   const [embarque, setEmbarque] = useState('17:45')
   const [salvando, setSalvando] = useState(false)
+
+  // IDs dos motoristas já alocados no dia selecionado.
+  const motoristaIdsAlocados = useMemo(
+    () => new Set(alocacoes.map((a) => a.motorista)),
+    [alocacoes],
+  )
 
   async function adicionar() {
     if (!veiculoId || !motoristaId) return
@@ -109,6 +114,7 @@ export default function VeiculosAlocadosPanel({
               ))}
             </select>
           </Campo>
+
           <Campo label="Motorista">
             <select
               value={motoristaId}
@@ -116,13 +122,22 @@ export default function VeiculosAlocadosPanel({
               className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm"
             >
               <option value="">Selecione...</option>
-              {motoristas.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.nome}
-                </option>
-              ))}
+              {motoristas.map((m) => {
+                const jaAlocado = motoristaIdsAlocados.has(m.id)
+                return (
+                  <option key={m.id} value={m.id} disabled={jaAlocado}>
+                    {m.nome}{jaAlocado ? ' — já alocado' : ''}
+                  </option>
+                )
+              })}
             </select>
+            {motoristaIdsAlocados.size > 0 && (
+              <p className="mt-1 text-xs text-slate-400">
+                Motoristas com "já alocado" estão em outro veículo neste dia.
+              </p>
+            )}
           </Campo>
+
           <Campo label="Horário de embarque">
             <input
               type="time"

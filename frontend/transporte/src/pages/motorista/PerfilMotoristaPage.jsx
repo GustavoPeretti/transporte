@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import AppShell from '../../components/layout/AppShell'
 import Card from '../../components/ui/Card'
@@ -8,30 +8,22 @@ import { perfisService } from '../../services/perfis'
 
 export default function PerfilMotoristaPage() {
   const { sessao } = useAuth()
-  const motoristaId = sessao?.perfilMotoristaId ?? 1
+  const motoristaId = sessao?.perfilMotoristaId
+  const usuario = sessao?.usuario
 
   const [carregando, setCarregando] = useState(true)
-  const [perfis, setPerfis] = useState([])
-  const [usuarios, setUsuarios] = useState([])
+  const [perfil, setPerfil] = useState(null)
 
   useEffect(() => {
+    if (!motoristaId) { setCarregando(false); return }
     let ativo = true
-    Promise.all([perfisService.listarMotoristas(), perfisService.listarUsuarios()]).then(
-      ([pm, us]) => {
-        if (!ativo) return
-        setPerfis(pm)
-        setUsuarios(us)
-        setCarregando(false)
-      },
-    )
+    perfisService.obterMotorista(motoristaId).then((p) => {
+      if (!ativo) return
+      setPerfil(p)
+      setCarregando(false)
+    })
     return () => { ativo = false }
-  }, [])
-
-  const perfil = useMemo(() => perfis.find((p) => p.id === motoristaId), [perfis, motoristaId])
-  const usuario = useMemo(
-    () => (perfil ? usuarios.find((u) => u.id === perfil.usuario) : null),
-    [perfil, usuarios],
-  )
+  }, [motoristaId])
 
   if (carregando) return <AppShell title="Meu Perfil"><Spinner /></AppShell>
 
@@ -45,7 +37,6 @@ export default function PerfilMotoristaPage() {
           ← Voltar
         </Link>
 
-        {/* Avatar + nome */}
         <div className="flex flex-col items-center gap-3 py-4">
           <div className="flex size-20 items-center justify-center rounded-full bg-brand-600 text-3xl font-bold text-white">
             {inicial}
@@ -59,7 +50,7 @@ export default function PerfilMotoristaPage() {
         <Card title="Dados pessoais">
           <dl className="space-y-4">
             <Item label="Nome completo" valor={nome} />
-            <Item label="CPF" valor={usuario?.cpf || '—'} />
+            <Item label="CPF"            valor={usuario?.cpf || '—'} />
             <Item label="Habilitação (CNH)" valor={perfil?.habilitacao || '—'} />
           </dl>
         </Card>
@@ -71,7 +62,7 @@ export default function PerfilMotoristaPage() {
 function Item({ label, valor }) {
   return (
     <div className="flex flex-col gap-0.5">
-      <dt className="text-xs font-medium text-slate-400 uppercase tracking-wide">{label}</dt>
+      <dt className="text-xs font-medium uppercase tracking-wide text-slate-400">{label}</dt>
       <dd className="text-sm font-semibold text-slate-700">{valor}</dd>
     </div>
   )

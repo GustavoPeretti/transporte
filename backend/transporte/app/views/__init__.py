@@ -8,3 +8,4 @@ from .confirmacao import ConfirmacaoViewSet
 from .advertencia import AdvertenciaViewSet
 from .alocacao_veiculo import AlocacaoVeiculoViewSet
 from .alocacao_instituicao import AlocacaoInstituicaoViewSet
+from .notificacao import NotificacaoViewSet
