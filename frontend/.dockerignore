@@ -1,0 +1,10 @@
+transporte/node_modules
+transporte/dist
+
+.git
+.gitignore
+
+.vscode
+.idea
+
+Dockerfile

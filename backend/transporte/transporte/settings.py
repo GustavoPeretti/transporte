@@ -21,12 +21,16 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-k=s_s-tk)8qxg=38%^f#ihj!^p7d3el#d4ll$h#jsla=&c5q1h'
+SECRET_KEY = os.getenv('DJANGO_SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv('DJANGO_DEBUG', 'False').lower() == 'true'
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'testserver']
+ALLOWED_HOSTS = [
+    host.strip()
+    for host in os.getenv('DJANGO_ALLOWED_HOSTS', '').split(',')
+    if host.strip()
+]
 
 
 # Application definition
@@ -89,8 +93,12 @@ WSGI_APPLICATION = 'transporte.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': os.getenv('DATABASE_NAME'),
+        'USER': os.getenv('DATABASE_USERNAME'),
+        'PASSWORD': os.getenv('DATABASE_PASSWORD'),
+        'HOST': os.getenv('DATABASE_HOSTNAME'),
+        'PORT': os.getenv('DATABASE_PORT', '5432'),
     }
 }
 
@@ -117,9 +125,9 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/6.0/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = 'pt-br'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'America/Sao_Paulo'
 
 USE_I18N = True
 
@@ -131,7 +139,8 @@ USE_TZ = True
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-STATIC_URL = 'static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATIC_URL = '/static/'
 
 MEDIA_ROOT = (
   os.path.join(BASE_DIR, 'media')
@@ -139,8 +148,26 @@ MEDIA_ROOT = (
 
 MEDIA_URL = '/media/'
 
+SECURE_PROXY_SSL_HEADER = (
+    'HTTP_X_FORWARDED_PROTO',
+    'https',
+)
+
+SECURE_SSL_REDIRECT = not DEBUG
+
+CSRF_COOKIE_SECURE = not DEBUG
+SESSION_COOKIE_SECURE = not DEBUG
+
 CSRF_COOKIE_SAMESITE = 'Lax'
-CSRF_COOKIE_SECURE = False
-CSRF_TRUSTED_ORIGINS = ['http://localhost:5173', 'http://127.0.0.1:5173']
 SESSION_COOKIE_SAMESITE = 'Lax'
-SESSION_COOKIE_SECURE = False
+
+SECURE_CONTENT_TYPE_NOSNIFF = True
+
+CSRF_TRUSTED_ORIGINS = [
+    origin.strip()
+    for origin in os.getenv(
+        'DJANGO_CSRF_TRUSTED_ORIGINS',
+        ''
+    ).split(',')
+    if origin.strip()
+]

@@ -13,7 +13,7 @@ export const ROLES = {
 
 // Rota inicial de cada papel após o login.
 export const HOME_BY_ROLE = {
-  [ROLES.ADMIN]: '/admin',
+  [ROLES.ADMIN]: '/dashboard',
   [ROLES.MOTORISTA]: '/motorista',
   [ROLES.PASSAGEIRO]: '/passageiro',
 }
