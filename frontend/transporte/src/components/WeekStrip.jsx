@@ -43,7 +43,7 @@ export default function WeekStrip({
         </div>
       </div>
 
-      <div className="grid grid-cols-7 gap-1">
+      <div className="grid grid-cols-7 gap-0.5 sm:gap-1">
         {dias.map((dia, i) => {
           const ativo = selecionado && isSameDay(dia, selecionado)
           const hoje = isSameDay(dia, new Date())
@@ -52,16 +52,16 @@ export default function WeekStrip({
               key={toISODate(dia)}
               type="button"
               onClick={() => onSelecionar(dia)}
-              className={`flex flex-col items-center rounded-xl px-1 py-2 transition-colors ${
+              className={`flex flex-col items-center rounded-xl px-0.5 py-2 transition-colors sm:px-1 ${
                 ativo
                   ? 'bg-brand-600 text-white'
                   : 'text-slate-600 hover:bg-slate-100'
               }`}
             >
-              <span className={`text-[10px] uppercase ${ativo ? 'text-brand-100' : 'text-slate-400'}`}>
+              <span className={`text-[0.625rem] uppercase leading-tight ${ativo ? 'text-brand-100' : 'text-slate-400'}`}>
                 {WEEKDAYS_SHORT_PT[i]}
               </span>
-              <span className="text-sm font-semibold">{formatDayMonth(dia)}</span>
+              <span className="text-xs font-semibold tabular-nums sm:text-sm">{formatDayMonth(dia)}</span>
               {hoje && !ativo && <span className="mt-0.5 size-1 rounded-full bg-brand-500" />}
             </button>
           )

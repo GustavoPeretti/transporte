@@ -17,11 +17,12 @@ export const confirmacoesService = {
     return api.post('/confirmacoes/', { passageiro, planejamento, ida, retorno })
   },
 
-  registrarEmbarque({ data, idPassageiro, tipo }) {
-    return api.post('/confirmacoes/registrar-embarque/', {
-      data,
-      id_passageiro: idPassageiro,
-      tipo,
-    })
+  // Registra presença. Pelo QR, envia o token assinado (`qrToken`); na marcação
+  // manual pelo motorista, envia o id do passageiro.
+  registrarEmbarque({ data, idPassageiro, qrToken, tipo }) {
+    const body = { data, tipo }
+    if (qrToken) body.qr_token = qrToken
+    else body.id_passageiro = idPassageiro
+    return api.post('/confirmacoes/registrar-embarque/', body)
   },
 }

@@ -7,4 +7,6 @@ export const perfisService = {
 
   obterMotorista:  (id) => api.get(`/perfis-motorista/${id}/`),
   obterPassageiro: (id) => api.get(`/perfis-passageiro/${id}/`),
+
+  deletarUsuario: (id) => api.delete(`/usuarios/${id}/`),
 }

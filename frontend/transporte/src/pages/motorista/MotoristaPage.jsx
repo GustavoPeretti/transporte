@@ -124,49 +124,48 @@ export default function MotoristaPage() {
   }
 
   // Registra o embarque via rota especial. O backend só MARCA presença (não desmarca).
-  const marcar = useCallback(
-    async (perfilId, tipo, nome) => {
+  // Manual: envia o id do passageiro. Via QR: envia o token assinado e o backend
+  // devolve o id resolvido para atualizar a linha correta.
+  const aplicarEmbarque = useCallback(
+    async ({ perfilId, qrToken, tipo }) => {
       if (!planHoje) return
       const campoPresenca = tipo === 'ida' ? 'presenca_ida' : 'presenca_retorno'
       try {
-        await confirmacoesService.registrarEmbarque({
+        const res = await confirmacoesService.registrarEmbarque({
           data: planHoje.data,
           idPassageiro: perfilId,
+          qrToken,
           tipo,
         })
+        const idResolvido = res?.id_passageiro ?? perfilId
         setConfirmacoes((prev) =>
           prev.map((c) => {
             const perfil = perfisPassageiro.find((p) => p.id === c.passageiro)
-            return c.planejamento === planHoje.id && perfil?.id === perfilId
+            return c.planejamento === planHoje.id && perfil?.id === idResolvido
               ? { ...c, [campoPresenca]: true }
               : c
           }),
         )
+        const lista = tipo === 'ida' ? passageirosIda : passageirosVolta
+        const item = lista.find((p) => p.perfil.id === idResolvido)
+        const nome = item?.usuario?.first_name || `Passageiro #${idResolvido}`
         setQrFeedback({ tipo: 'ok', msg: `${nome} embarcou! ✓` })
       } catch (err) {
         const st = err?.detail?.status
         setQrFeedback({ tipo: 'erro', msg: MSG_EMBARQUE[st] || 'Erro ao registrar embarque.' })
       }
     },
-    [planHoje, perfisPassageiro],
+    [planHoje, perfisPassageiro, passageirosIda, passageirosVolta],
   )
 
-  // Scanner: o QR da carteirinha codifica o id do PerfilPassageiro.
+  // Scanner: o QR da carteirinha carrega um token assinado; o backend valida.
   const handleQrScan = useCallback(
     async (texto) => {
       setQrAberto(false)
-      const perfilId = parseInt(texto, 10)
-      if (isNaN(perfilId)) {
-        setQrFeedback({ tipo: 'erro', msg: 'QR code inválido.' })
-        return
-      }
       const tipo = qrAba === 'ida' ? 'ida' : 'retorno'
-      const lista = qrAba === 'ida' ? passageirosIda : passageirosVolta
-      const item = lista.find((p) => p.perfil.id === perfilId)
-      const nome = item?.usuario?.first_name || `Passageiro #${perfilId}`
-      await marcar(perfilId, tipo, nome)
+      await aplicarEmbarque({ qrToken: texto, tipo })
     },
-    [qrAba, passageirosIda, passageirosVolta, marcar],
+    [qrAba, aplicarEmbarque],
   )
 
   function abrirQr(abaAtiva) {
@@ -229,7 +228,7 @@ export default function MotoristaPage() {
         )}
 
         {/* Abas */}
-        <div className="flex gap-2">
+        <div className="grid grid-cols-3 gap-2 sm:flex">
           {[
             { id: 'veiculo', label: 'Veículo' },
             { id: 'ida', label: `Ida (${totalIda}/${passageirosIda.length})` },
@@ -239,7 +238,7 @@ export default function MotoristaPage() {
               key={t.id}
               type="button"
               onClick={() => setAba(t.id)}
-              className={`rounded-xl px-3 py-2 text-sm font-medium transition-colors ${
+              className={`whitespace-nowrap rounded-xl px-2 py-2 text-xs font-medium transition-colors sm:px-3 sm:text-sm ${
                 aba === t.id
                   ? 'bg-brand-600 text-white'
                   : 'border border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
@@ -274,7 +273,7 @@ export default function MotoristaPage() {
             campoPresenca={aba === 'ida' ? 'presenca_ida' : 'presenca_retorno'}
             grupos={agruparPorInstituicao(aba === 'ida' ? passageirosIda : passageirosVolta)}
             onQr={() => abrirQr(aba)}
-            onMarcar={marcar}
+            onMarcar={(perfilId, tipo) => aplicarEmbarque({ perfilId, tipo })}
           />
         )}
       </div>
@@ -329,7 +328,7 @@ function ListaEmbarque({ tipo, lista, campoPresenca, grupos, onQr, onMarcar }) {
                     <button
                       type="button"
                       disabled={presente}
-                      onClick={() => onMarcar(perfil.id, tipo, usuario?.first_name || nome)}
+                      onClick={() => onMarcar(perfil.id, tipo)}
                       className={`rounded-lg px-3 py-1 text-xs font-semibold transition-colors ${
                         presente
                           ? 'cursor-default bg-emerald-600 text-white'

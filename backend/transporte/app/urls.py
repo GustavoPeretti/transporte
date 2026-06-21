@@ -15,7 +15,13 @@ from .views import (
     AlocacaoInstituicaoViewSet,
     NotificacaoViewSet,
 )
-from .views.auth import CurrentUserView, CsrfTokenView, ObtainAuthTokenView
+from .views.auth import (
+    CurrentUserView,
+    CsrfTokenView,
+    ObtainAuthTokenView,
+    SessionLoginView,
+    SessionLogoutView,
+)
 
 router = DefaultRouter()
 router.register(r'veiculos', VeiculoViewSet)
@@ -25,12 +31,14 @@ router.register(r'instituicoes', InstituicaoViewSet)
 router.register(r'perfis-passageiro', PerfilPassageiroViewSet)
 router.register(r'perfis-motorista', PerfilMotoristaViewSet)
 router.register(r'confirmacoes', ConfirmacaoViewSet, basename='confirmacao')
-router.register(r'advertencias', AdvertenciaViewSet)
+router.register(r'advertencias', AdvertenciaViewSet, basename='advertencia')
 router.register(r'alocacoes-veiculo', AlocacaoVeiculoViewSet)
 router.register(r'alocacoes-instituicao', AlocacaoInstituicaoViewSet)
 router.register(r'notificacoes', NotificacaoViewSet, basename='notificacao')
 
 urlpatterns = router.urls + [
+    path('auth/login/', SessionLoginView.as_view()),
+    path('auth/logout/', SessionLogoutView.as_view()),
     path('auth/token/', ObtainAuthTokenView.as_view()),
     path('auth/csrf/', CsrfTokenView.as_view()),
     path('auth/me/', CurrentUserView.as_view()),

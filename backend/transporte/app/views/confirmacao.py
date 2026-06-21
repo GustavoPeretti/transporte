@@ -1,5 +1,6 @@
-from rest_framework import viewsets, status
-from rest_framework.authentication import TokenAuthentication
+from django.core import signing
+from rest_framework import viewsets, status, permissions
+from rest_framework.authentication import SessionAuthentication, TokenAuthentication
 from rest_framework.decorators import action
 from rest_framework.response import Response
 import datetime
@@ -8,11 +9,19 @@ from ..models import Confirmacao, PerfilPassageiro
 from ..serializers import ConfirmacaoSerializer
 from ..facades.planejamento import PlanejamentoFacade  # [PATTERN: FACADE]
 from ..services.confirmacao import TipoViagem, RegistroEmbarqueStatus
+from ..permissions import IsMotoristaOrAdmin
+from ..qr import ler_token
 
 
 class ConfirmacaoViewSet(viewsets.ModelViewSet):
-    authentication_classes = [TokenAuthentication]
+    authentication_classes = [TokenAuthentication, SessionAuthentication]
     serializer_class = ConfirmacaoSerializer
+
+    def get_permissions(self):
+        # Registrar embarque (presença) é restrito a motorista/admin.
+        if self.action == 'registrar_embarque':
+            return [IsMotoristaOrAdmin()]
+        return [permissions.IsAuthenticated()]
 
     def get_queryset(self):
         user = self.request.user
@@ -35,6 +44,14 @@ class ConfirmacaoViewSet(viewsets.ModelViewSet):
 
         passageiro = serializer.validated_data['passageiro']
         planejamento = serializer.validated_data['planejamento']
+
+        # Um passageiro só pode confirmar viagens por si mesmo.
+        perfil = PerfilPassageiro.objects.filter(usuario=request.user).first()
+        if perfil and passageiro.pk != perfil.pk:
+            return Response(
+                {'erro': 'Não é permitido confirmar por outro passageiro.'},
+                status=status.HTTP_403_FORBIDDEN,
+            )
 
         try:
             instance = Confirmacao.objects.get(passageiro=passageiro, planejamento=planejamento)
@@ -59,12 +76,24 @@ class ConfirmacaoViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['post'], url_path='registrar-embarque')
     def registrar_embarque(self, request):
         data_str = request.data.get('data')
-        id_passageiro = request.data.get('id_passageiro')
         tipo_str = request.data.get('tipo')
+        qr_token = request.data.get('qr_token')
+        id_passageiro = request.data.get('id_passageiro')
+
+        # QR assinado tem prioridade: valida a assinatura antes de usar o id.
+        # Impede que um QR forjado com um id arbitrário registre presença.
+        if qr_token:
+            try:
+                id_passageiro = ler_token(qr_token)
+            except signing.BadSignature:
+                return Response(
+                    {'erro': 'QR code inválido ou adulterado.'},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
 
         if not all([data_str, id_passageiro, tipo_str]):
             return Response(
-                {'erro': 'Campos obrigatórios: data, id_passageiro, tipo'},
+                {'erro': 'Campos obrigatórios: data, (qr_token ou id_passageiro), tipo'},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -96,6 +125,6 @@ class ConfirmacaoViewSet(viewsets.ModelViewSet):
         }
 
         return Response(
-            {'status': resultado.name},
+            {'status': resultado.name, 'id_passageiro': int(id_passageiro)},
             status=mapa_status[resultado],
         )

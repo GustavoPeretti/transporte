@@ -80,14 +80,14 @@ export default function PerfilPassageiroPage() {
           nome={nome}
           instituicao={instituicao?.nome}
           matricula={numMatricula}
-          passageiroId={passageiroId}
+          qrToken={perfil?.qr_token}
         />
       </div>
     </AppShell>
   )
 }
 
-function Carteirinha({ nome, instituicao, matricula, passageiroId }) {
+function Carteirinha({ nome, instituicao, matricula, qrToken }) {
   return (
     <div>
       <h2 className="mb-2 text-sm font-semibold text-slate-600">Carteirinha digital</h2>
@@ -116,7 +116,13 @@ function Carteirinha({ nome, instituicao, matricula, passageiroId }) {
             </div>
           </div>
           <div className="shrink-0 rounded-xl bg-white p-2 shadow">
-            <QRCodeSVG value={String(passageiroId)} size={100} fgColor="#1e3a8a" bgColor="#ffffff" level="M" />
+            {qrToken ? (
+              <QRCodeSVG value={qrToken} size={100} fgColor="#1e3a8a" bgColor="#ffffff" level="M" />
+            ) : (
+              <div className="flex size-[100px] items-center justify-center text-center text-[10px] text-slate-400">
+                QR indisponível
+              </div>
+            )}
           </div>
         </div>
 

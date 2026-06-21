@@ -1,24 +1,20 @@
-import { ROLES } from '../config'
 import { api } from '../lib/apiClient'
 
-// Autenticação usando DRF TokenAuthentication.
-// Faz login com credenciais e obtém um token válido para chamadas subsequentes.
-// Depois de obter o token, buscamos o usuário atual e seu papel no backend.
+// Autenticação por sessão (cookie httpOnly).
+// O backend grava o cookie de sessão httpOnly — inacessível a JavaScript e,
+// portanto, resistente a roubo via XSS. Nenhum token é guardado no front.
 async function login(username, password) {
-  const tokenResponse = await api.post('/auth/token/', {
-    username,
-    password,
-  })
-
-  if (!tokenResponse?.token) {
-    const erro = new Error('Falha ao autenticar.')
-    erro.status = 401
-    throw erro
-  }
-
-  localStorage.setItem('auth_token', tokenResponse.token)
-  const me = await api.get('/auth/me/')
-  return { token: tokenResponse.token, ...me }
+  // Retorna { usuario, role, perfilMotoristaId, perfilPassageiroId }.
+  return api.post('/auth/login/', { username, password })
 }
 
-export const authService = { login }
+async function logout() {
+  // Encerra a sessão no servidor (invalida o cookie). Falha é tolerável.
+  try {
+    await api.post('/auth/logout/')
+  } catch {
+    /* ignora: a limpeza local acontece de qualquer forma */
+  }
+}
+
+export const authService = { login, logout }

@@ -245,7 +245,7 @@ function GradeSemana({
           type="button"
           disabled={!aberto}
           onClick={() => onAlternar(plan, campo)}
-          className={`mx-auto flex size-8 items-center justify-center rounded-lg border text-sm font-semibold transition-colors ${
+          className={`mx-auto flex size-8 items-center justify-center rounded-lg border text-sm font-semibold transition-colors sm:size-9 ${
             marcado
               ? 'border-brand-600 bg-brand-600 text-white'
               : diaAtivo
@@ -283,7 +283,7 @@ function GradeSemana({
       <div className="overflow-x-auto">
         <table className="w-full table-fixed border-collapse">
           <colgroup>
-            <col style={{ width: '3.5rem' }} />
+            <col className="w-10 sm:w-14" />
             {dias.map((d) => <col key={toISODate(d)} />)}
           </colgroup>
           <thead>
@@ -301,10 +301,10 @@ function GradeSemana({
                         ativo ? 'bg-brand-600 text-white' : 'hover:bg-slate-100'
                       }`}
                     >
-                      <span className={`block text-[10px] uppercase ${ativo ? 'text-brand-200' : 'text-slate-400'}`}>
+                      <span className={`block text-[0.625rem] uppercase leading-tight ${ativo ? 'text-brand-200' : 'text-slate-400'}`}>
                         {WEEKDAYS_SHORT_PT[i]}
                       </span>
-                      <span className={`block text-xs font-semibold ${ativo ? 'text-white' : 'text-slate-600'}`}>
+                      <span className={`block text-xs font-semibold tabular-nums sm:text-sm ${ativo ? 'text-white' : 'text-slate-600'}`}>
                         {formatDayMonth(d)}
                       </span>
                       {hoje && !ativo && <span className="mx-auto mt-0.5 block size-1 rounded-full bg-brand-500" />}

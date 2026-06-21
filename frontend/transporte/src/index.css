@@ -20,10 +20,20 @@ body,
   height: 100%;
 }
 
+/* Escala de fonte fluida: o tamanho-base do rem cresce suavemente com a
+   largura da tela, então todas as classes text-* do Tailwind (que usam rem)
+   ficam responsivas sem precisar de breakpoints em cada elemento.
+   ~14.5px em telas estreitas (360px) → 16px a partir de ~640px. */
+html {
+  font-size: clamp(14.5px, 0.86rem + 0.35vw, 16px);
+}
+
 body {
   margin: 0;
   background-color: #f1f5f9;
   color: #0f172a;
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }

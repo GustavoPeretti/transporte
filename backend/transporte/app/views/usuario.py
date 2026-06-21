@@ -1,15 +1,23 @@
 from django.db import transaction
-from rest_framework import viewsets, status
+from rest_framework import viewsets, status, permissions
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from ..models import Usuario, PerfilMotorista, PerfilPassageiro, Instituicao
 from ..serializers import UsuarioSerializer
+from ..permissions import IsAdmin
 
 
 class UsuarioViewSet(viewsets.ModelViewSet):
     queryset = Usuario.objects.all()
     serializer_class = UsuarioSerializer
+
+    def get_permissions(self):
+        # Qualquer autenticado pode listar/ver nomes (PII é ocultada pelo
+        # serializer para não-admins). Criar/alterar/remover é só admin.
+        if self.action in ('list', 'retrieve'):
+            return [permissions.IsAuthenticated()]
+        return [IsAdmin()]
 
     @action(detail=False, methods=['post'], url_path='criar-motorista')
     def criar_motorista(self, request):

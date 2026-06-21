@@ -8,7 +8,8 @@ export default defineConfig({
   plugins: [react(), tailwindcss(), basicSsl()],
   server: {
     https: true,
-    host: true, // expõe na rede local para acesso pelo celular
+    // Por segurança o dev server escuta só em localhost. Para acessar pelo
+    // celular numa rede CONFIÁVEL, rode `npm run dev -- --host` (opt-in).
     proxy: {
       '/api': {
         target: 'http://localhost:8000',

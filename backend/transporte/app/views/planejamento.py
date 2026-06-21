@@ -6,11 +6,13 @@ from ..models import Planejamento
 from ..models.notificacao import Notificacao
 from ..serializers import PlanejamentoSerializer
 from ..facades.planejamento import PlanejamentoFacade  # [PATTERN: FACADE]
+from ..permissions import IsAdminOrReadOnly
 
 
 class PlanejamentoViewSet(viewsets.ModelViewSet):
     queryset = Planejamento.objects.all()
     serializer_class = PlanejamentoSerializer
+    permission_classes = [IsAdminOrReadOnly]
 
     def partial_update(self, request, *args, **kwargs):
         instance = self.get_object()

@@ -13,6 +13,8 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 from pathlib import Path
 import os
 
+from django.core.exceptions import ImproperlyConfigured
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -20,15 +22,29 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.getenv('DJANGO_SECRET_KEY')
-
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv('DJANGO_DEBUG', 'False').lower() == 'true'
 
+# SECURITY WARNING: keep the secret key used in production secret!
+# Em produção a chave é obrigatória (vinda do ambiente). Em desenvolvimento,
+# caímos para uma chave fixa e INSEGURA, só para não travar quem roda sem
+# configurar o ambiente — ela jamais deve ser usada em produção.
+SECRET_KEY = os.getenv('DJANGO_SECRET_KEY')
+if not SECRET_KEY:
+    if DEBUG:
+        SECRET_KEY = 'django-insecure-dev-only-nao-use-em-producao'
+    else:
+        raise ImproperlyConfigured(
+            'DJANGO_SECRET_KEY não definida. Configure uma chave secreta forte '
+            'para rodar em produção (DEBUG=False).'
+        )
+
 ALLOWED_HOSTS = [
     host.strip()
-    for host in os.getenv('DJANGO_ALLOWED_HOSTS', '').split(',')
+    for host in os.getenv(
+        'DJANGO_ALLOWED_HOSTS',
+        'localhost,127.0.0.1,[::1]'
+    ).split(',')
     if host.strip()
 ]
 
@@ -51,6 +67,10 @@ AUTH_USER_MODEL = 'app.Usuario'
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
+        # SessionAuthentication: o token de sessão fica em cookie httpOnly
+        # (inacessível a JS, resistente a XSS) e o DRF exige CSRF nos métodos
+        # mutantes. TokenAuthentication permanece para clientes não-browser.
+        'rest_framework.authentication.SessionAuthentication',
         'rest_framework.authentication.TokenAuthentication',
     ],
     'DEFAULT_PERMISSION_CLASSES': [
@@ -91,16 +111,26 @@ WSGI_APPLICATION = 'transporte.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.getenv('DATABASE_NAME'),
-        'USER': os.getenv('DATABASE_USERNAME'),
-        'PASSWORD': os.getenv('DATABASE_PASSWORD'),
-        'HOST': os.getenv('DATABASE_HOSTNAME'),
-        'PORT': os.getenv('DATABASE_PORT', '5432'),
+database_name = os.getenv('DATABASE_NAME')
+
+if database_name:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': database_name,
+            'USER': os.getenv('DATABASE_USERNAME'),
+            'PASSWORD': os.getenv('DATABASE_PASSWORD'),
+            'HOST': os.getenv('DATABASE_HOSTNAME'),
+            'PORT': os.getenv('DATABASE_PORT', '5432'),
+        }
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
 
 
 # Password validation
@@ -134,40 +164,42 @@ USE_I18N = True
 USE_TZ = True
 
 
-# Static files (CSS, JavaScript, Images)
+# Static files (CSS, JavaScript, Images) e arquivos de mídia
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
+
+STATIC_URL = '/static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-STATIC_ROOT = BASE_DIR / 'staticfiles'
-STATIC_URL = '/static/'
 
-MEDIA_ROOT = (
-  os.path.join(BASE_DIR, 'media')
-)
+# Segurança — HTTPS, cookies e CSRF
+# https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
+#
+# As proteções "fortes" ficam ligadas quando DEBUG=False (produção) e
+# relaxadas em desenvolvimento, onde o tráfego é http local.
 
-MEDIA_URL = '/media/'
+# Confia no cabeçalho do proxy reverso (nginx) para detectar HTTPS.
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
-SECURE_PROXY_SSL_HEADER = (
-    'HTTP_X_FORWARDED_PROTO',
-    'https',
-)
-
+# Redireciona http→https e marca os cookies como Secure (apenas em produção).
 SECURE_SSL_REDIRECT = not DEBUG
-
-CSRF_COOKIE_SECURE = not DEBUG
 SESSION_COOKIE_SECURE = not DEBUG
+CSRF_COOKIE_SECURE = not DEBUG
 
-CSRF_COOKIE_SAMESITE = 'Lax'
+# A sessão é httpOnly por padrão (resistente a XSS). O cookie de CSRF precisa
+# ser legível pelo JS do front, então NÃO é httpOnly (padrão do Django).
 SESSION_COOKIE_SAMESITE = 'Lax'
+CSRF_COOKIE_SAMESITE = 'Lax'
 
 SECURE_CONTENT_TYPE_NOSNIFF = True
 
+# Domínios confiáveis para requisições CSRF (ex.: https://meusite.com.br).
 CSRF_TRUSTED_ORIGINS = [
     origin.strip()
-    for origin in os.getenv(
-        'DJANGO_CSRF_TRUSTED_ORIGINS',
-        ''
-    ).split(',')
+    for origin in os.getenv('DJANGO_CSRF_TRUSTED_ORIGINS', '').split(',')
     if origin.strip()
 ]

@@ -12,6 +12,7 @@ import WeekStrip from '../../components/WeekStrip'
 import VeiculosAlocadosPanel from './components/VeiculosAlocadosPanel'
 import InstituicoesPanel from './components/InstituicoesPanel'
 import CriarUsuarioModal from './components/CriarUsuarioModal'
+import GerenciarUsuariosModal from './components/GerenciarUsuariosModal'
 import { useSemana } from '../../hooks/useSemana'
 import { planejamentosService } from '../../services/planejamentos'
 import { alocacoesService } from '../../services/alocacoes'
@@ -38,6 +39,8 @@ export default function AdminDashboard() {
   const [organizarFeedback, setOrganizarFeedback] = useState(null)
   const [listaAberta, setListaAberta] = useState(false)
   const [criarUsuarioAberto, setCriarUsuarioAberto] = useState(false)
+  const [gerenciarUsuariosAberto, setGerenciarUsuariosAberto] = useState(false)
+  const [alterandoTransporte, setAlterandoTransporte] = useState(false)
   const [erroCarga, setErroCarga] = useState(false)
 
   const [planejamentos, setPlanejamentos] = useState([])
@@ -165,8 +168,47 @@ export default function AdminDashboard() {
 
   async function alternarAberto(valor) {
     if (!planSelecionado) return
-    const atualizado = await planejamentosService.definirAberto(planSelecionado.id, valor)
-    setPlanejamentos((prev) => prev.map((p) => (p.id === atualizado.id ? atualizado : p)))
+    try {
+      const atualizado = await planejamentosService.definirAberto(planSelecionado.id, valor)
+      setPlanejamentos((prev) => prev.map((p) => (p.id === atualizado.id ? atualizado : p)))
+    } catch {
+      setOrganizarFeedback({ tipo: 'erro', msg: 'Não foi possível alterar o planejamento.' })
+    }
+  }
+
+  async function alternarTransporte(temTransporte) {
+    if (alterandoTransporte) return
+    setAlterandoTransporte(true)
+    try {
+      if (temTransporte) {
+        const novo = await planejamentosService.criar(toISODate(selecionado))
+        setPlanejamentos((prev) => [...prev, novo])
+      } else if (planSelecionado) {
+        await planejamentosService.deletar(planSelecionado.id)
+        setPlanejamentos((prev) => prev.filter((p) => p.id !== planSelecionado.id))
+        setAlocVeiculos((prev) => prev.filter((a) => a.planejamento !== planSelecionado.id))
+        setAlocInstituicoes((prev) => {
+          const idsRemovidos = alocVeiculos
+            .filter((a) => a.planejamento === planSelecionado.id)
+            .map((a) => a.id)
+          return prev.filter((ai) => !idsRemovidos.includes(ai.alocacao_veiculo))
+        })
+        setOrganizarFeedback(null)
+      }
+    } catch {
+      setOrganizarFeedback({
+        tipo: 'erro',
+        msg: 'Não foi possível alterar o transporte deste dia. Faça login novamente se o problema persistir.',
+      })
+    } finally {
+      setAlterandoTransporte(false)
+    }
+  }
+
+  function handleDeletarUsuario(id) {
+    setUsuarios((prev) => prev.filter((u) => u.id !== id))
+    setPerfisMotorista((prev) => prev.filter((p) => p.usuario !== id))
+    setPerfisPassageiro((prev) => prev.filter((p) => p.usuario !== id))
   }
 
   async function adicionarVeiculo(payload) {
@@ -300,32 +342,52 @@ export default function AdminDashboard() {
         />
 
         {/* Controle do dia */}
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-2.5">
-            <span className="text-sm font-medium text-slate-700">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div className="flex flex-col gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3">
+            <span className="text-sm font-semibold text-slate-700">
               Planejamento de {formatDayMonth(selecionado)}
             </span>
-            <Toggle
-              checked={Boolean(planSelecionado?.aberto)}
-              onChange={alternarAberto}
-              label="Abrir planejamento"
-            />
-            <span className="text-xs text-slate-500">
-              {planSelecionado?.aberto ? 'Aberto' : 'Fechado'}
-            </span>
+            <div className="flex items-center gap-3">
+              <span className="w-36 text-xs text-slate-500">Abrir planejamento</span>
+              <Toggle
+                checked={Boolean(planSelecionado?.aberto)}
+                onChange={alternarAberto}
+                disabled={!planSelecionado}
+                label="Abrir planejamento"
+              />
+              <span className="text-xs text-slate-500">
+                {planSelecionado?.aberto ? 'Aberto' : 'Fechado'}
+              </span>
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="w-36 text-xs text-slate-500">Tem transporte</span>
+              <Toggle
+                checked={Boolean(planSelecionado)}
+                onChange={alternarTransporte}
+                disabled={alterandoTransporte}
+                label="Tem transporte neste dia"
+              />
+              <span className="text-xs text-slate-500">
+                {planSelecionado ? 'Sim' : 'Não'}
+              </span>
+            </div>
           </div>
-          <div className="flex flex-wrap gap-2">
+          <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:justify-end">
             <Button
+              className="w-full sm:w-auto"
               disabled={fechado || organizando}
               onClick={organizarPlanejamento}
             >
               {organizando ? 'Organizando...' : 'Organizar automaticamente'}
             </Button>
-            <Button variant="secondary" onClick={() => setListaAberta(true)}>
+            <Button className="w-full sm:w-auto" variant="secondary" onClick={() => setListaAberta(true)}>
               Gerar lista de passageiros
             </Button>
-            <Button variant="secondary" onClick={() => setCriarUsuarioAberto(true)}>
+            <Button className="w-full sm:w-auto" variant="secondary" onClick={() => setCriarUsuarioAberto(true)}>
               + Criar usuário
+            </Button>
+            <Button className="w-full sm:w-auto" variant="secondary" onClick={() => setGerenciarUsuariosAberto(true)}>
+              Gerenciar usuários
             </Button>
           </div>
         </div>
@@ -387,6 +449,16 @@ export default function AdminDashboard() {
         onClose={() => setCriarUsuarioAberto(false)}
         instituicoes={instituicoes}
         onCriado={recarregarUsuarios}
+      />
+
+      {/* Modal: listar e deletar usuários */}
+      <GerenciarUsuariosModal
+        open={gerenciarUsuariosAberto}
+        onClose={() => setGerenciarUsuariosAberto(false)}
+        usuarios={usuarios}
+        perfisMotorista={perfisMotorista}
+        perfisPassageiro={perfisPassageiro}
+        onDeletado={handleDeletarUsuario}
       />
 
       {/* Modal: lista de passageiros com visualização e geração de PDF */}
