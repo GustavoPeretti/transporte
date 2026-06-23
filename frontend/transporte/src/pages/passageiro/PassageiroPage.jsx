@@ -15,14 +15,14 @@ import { veiculosService, TIPO_VEICULO_LABEL } from '../../services/veiculos'
 import { perfisService } from '../../services/perfis'
 import { WEEKDAYS_PT, WEEKDAYS_SHORT_PT, formatDayMonth, formatTime, isSameDay, parseISODate, toISODate } from '../../lib/dates'
 
-// Pontos de embarque disponíveis (placeholder enquanto não vêm do backend).
+// Pontos de embarque (placeholder enquanto não vêm do backend): os três juntos.
 const ENDERECOS_EMBARQUE = ['Praça', 'Fórum', 'Portal']
 
-// Deriva um ponto de embarque estável a partir da alocação do veículo.
-function enderecoEmbarque(aloc) {
-  if (!aloc) return null
-  return ENDERECOS_EMBARQUE[aloc.id % ENDERECOS_EMBARQUE.length]
-}
+// "Praça, Fórum e Portal" — junta a lista com vírgulas e "e" antes do último.
+const LOCAL_EMBARQUE =
+  ENDERECOS_EMBARQUE.length > 1
+    ? `${ENDERECOS_EMBARQUE.slice(0, -1).join(', ')} e ${ENDERECOS_EMBARQUE.at(-1)}`
+    : ENDERECOS_EMBARQUE[0]
 
 // Nome do dia da semana (ex.: "Segunda") a partir de uma string ISO ou Date.
 function nomeDiaSemana(data) {
@@ -172,7 +172,7 @@ export default function PassageiroPage() {
                 />
               </svg>
               <span className="truncate">
-                Ponto de embarque: <span className="font-semibold">{enderecoEmbarque(embarqueDoDia.aloc)}</span>
+                Local de embarque: <span className="font-semibold">{LOCAL_EMBARQUE}</span>
               </span>
             </div>
           </div>
