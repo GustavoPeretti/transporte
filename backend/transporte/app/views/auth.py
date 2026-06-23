@@ -12,7 +12,7 @@ from ..serializers.usuario import UsuarioSerializer
 
 
 def dados_sessao(usuario, request=None):
-    """Monta o payload de sessão (usuário + papel + ids de perfil)."""
+    #Monta o payload de sessão (usuário + papel + ids de perfil).
     contexto = {'request': request} if request is not None else {}
     motorista = PerfilMotorista.objects.filter(usuario=usuario).first()
     passageiro = PerfilPassageiro.objects.filter(usuario=usuario).first()
@@ -40,11 +40,11 @@ class CsrfTokenView(views.APIView):
 
 
 class SessionLoginView(views.APIView):
-    """Login por sessão: cria um cookie de sessão httpOnly (resistente a XSS).
+    #Login por sessão: cria um cookie de sessão httpOnly (resistente a XSS).
 
-    Sem sessão ativa, o SessionAuthentication do DRF não exige CSRF nesta
-    chamada; após o login, os métodos mutantes passam a exigir CSRF.
-    """
+    #Sem sessão ativa, o SessionAuthentication do DRF não exige CSRF nesta
+    #chamada; após o login, os métodos mutantes passam a exigir CSRF.
+    
     authentication_classes = [SessionAuthentication]
     permission_classes = [AllowAny]
 
@@ -55,7 +55,7 @@ class SessionLoginView(views.APIView):
         usuario = authenticate(request, username=username, password=password)
         if usuario is None:
             return response.Response(
-                {'detail': 'Usuário ou senha inválidos.'},
+                {'detail': 'Usuário ou senha incorretos.'},
                 status=status.HTTP_401_UNAUTHORIZED,
             )
 

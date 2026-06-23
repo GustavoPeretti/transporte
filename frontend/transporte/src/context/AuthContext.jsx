@@ -20,8 +20,7 @@ export function AuthProvider({ children }) {
 
   const login = useCallback(async (username, password) => {
     const dados = await authService.login(username, password)
-    // A credencial real é o cookie de sessão httpOnly. Aqui guardamos apenas
-    // dados não sensíveis (papel/perfil) para reidratar a UI ao recarregar.
+    // A credencial é o cookie httpOnly; aqui guardamos só papel/perfil p/ reidratar a UI.
     localStorage.setItem(STORAGE_KEY, JSON.stringify(dados))
     setSessao(dados)
     return dados

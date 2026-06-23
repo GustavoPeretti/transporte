@@ -1,19 +1,18 @@
 import { api } from '../lib/apiClient'
 
-// Autenticação por sessão (cookie httpOnly).
-// O backend grava o cookie de sessão httpOnly — inacessível a JavaScript e,
-// portanto, resistente a roubo via XSS. Nenhum token é guardado no front.
+// Auth por sessão: o backend grava um cookie httpOnly (resistente a XSS); nada fica em JS.
+
+// Retorna { usuario, role, perfilMotoristaId, perfilPassageiroId }.
 async function login(username, password) {
-  // Retorna { usuario, role, perfilMotoristaId, perfilPassageiroId }.
   return api.post('/auth/login/', { username, password })
 }
 
 async function logout() {
-  // Encerra a sessão no servidor (invalida o cookie). Falha é tolerável.
+  // Invalida o cookie no servidor; a limpeza local acontece mesmo se falhar.
   try {
     await api.post('/auth/logout/')
   } catch {
-    /* ignora: a limpeza local acontece de qualquer forma */
+    /* ignora */
   }
 }
 

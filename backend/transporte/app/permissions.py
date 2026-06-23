@@ -1,19 +1,19 @@
-"""Permissões por papel (admin / motorista / passageiro).
+#Permissões por papel (admin / motorista / passageiro).
 
-A fronteira de segurança é o backend: o papel é derivado dos perfis no banco,
-nunca de dados enviados pelo cliente. O frontend apenas reflete isso na UI.
-"""
+#A fronteira de segurança é o backend: o papel é derivado dos perfis no banco,
+#nunca de dados enviados pelo cliente. O frontend apenas reflete isso na UI.
+
 from rest_framework import permissions
 
 from .models import PerfilMotorista, PerfilPassageiro
 
 
 def get_role(user):
-    """Deriva o papel do usuário a partir dos perfis. Sem perfil = admin.
+    #Deriva o papel do usuário a partir dos perfis. Sem perfil = admin.
 
-    O resultado é memoizado na instância de `user` para evitar consultas
-    repetidas dentro da mesma requisição.
-    """
+    #O resultado é memoizado na instância de `user` para evitar consultas
+    #repetidas dentro da mesma requisição.
+    
     if not user or not user.is_authenticated:
         return None
     cached = getattr(user, '_cached_role', None)
@@ -34,7 +34,7 @@ def is_admin(user):
 
 
 class IsAdmin(permissions.BasePermission):
-    """Apenas administradores (usuários sem perfil de motorista/passageiro)."""
+    #Apenas administradores (usuários sem perfil de motorista/passageiro).
 
     message = 'Ação restrita a administradores.'
 
@@ -43,7 +43,7 @@ class IsAdmin(permissions.BasePermission):
 
 
 class IsAdminOrReadOnly(permissions.BasePermission):
-    """Leitura para qualquer autenticado; escrita apenas para admin."""
+    #Leitura para qualquer autenticado; escrita apenas para admin.
 
     message = 'Apenas administradores podem alterar este recurso.'
 
@@ -57,7 +57,7 @@ class IsAdminOrReadOnly(permissions.BasePermission):
 
 
 class IsMotoristaOrAdmin(permissions.BasePermission):
-    """Apenas motoristas ou administradores."""
+    #Apenas motoristas ou administradores.
 
     message = 'Ação restrita a motoristas ou administradores.'
 

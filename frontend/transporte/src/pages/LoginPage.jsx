@@ -21,7 +21,7 @@ export default function LoginPage() {
       const { role } = await login(username.trim(), password)
       navigate(HOME_BY_ROLE[role] || '/', { replace: true })
     } catch (err) {
-      setErro(err.message || 'Não foi possível entrar.')
+      setErro(err?.detail?.detail || err.message || 'Não foi possível entrar.')
     } finally {
       setEnviando(false)
     }

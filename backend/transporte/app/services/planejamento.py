@@ -13,14 +13,12 @@ class OrganizacaoPlanejamentoStatus(Enum):
     MOTORISTAS_INSUFICIENTES = 4
 
 
-# ============================================================
 # PATTERN: OBSERVER — Subject
 # PlanejamentoService herda NotificacaoSubject e emite o evento
 # 'PLANEJAMENTO_ORGANIZADO' quando a alocação é concluída com
 # sucesso. Observers registrados (ex.: LogNotificador,
 # EmailNotificador) reagem automaticamente sem que o service
 # precise conhecê-los.
-# ============================================================
 class PlanejamentoService(NotificacaoSubject):
 
     def __init__(self):

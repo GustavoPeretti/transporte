@@ -125,9 +125,9 @@ class RegistrarEmbarqueTest(TestCase):
         confirmacao.save.assert_called_once()
 
 
-# ---------------------------------------------------------------------------
+
 # Testes do PlanejamentoService
-# ---------------------------------------------------------------------------
+
 
 from .models import Planejamento, Veiculo, Instituicao
 from .services.planejamento import PlanejamentoService, OrganizacaoPlanejamentoStatus
@@ -217,9 +217,9 @@ class OrganizarPlanejamentoTest(TestCase):
             MockAV.objects.filter.return_value.delete.assert_called_once()
 
 
-# ---------------------------------------------------------------------------
+
 # Helpers compartilhados pelos testes de integração (ViewSets)
-# ---------------------------------------------------------------------------
+
 
 def _criar_usuario(username, cpf, superuser=False):
     if superuser:
@@ -242,18 +242,19 @@ def _instituicao():
     )
 
 
-# ---------------------------------------------------------------------------
 # DatabaseNotificador
-# ---------------------------------------------------------------------------
+
 
 class DatabaseNotificadorTest(TestCase):
 
-    def test_planejamento_organizado_cria_notificacao_para_admin(self):
+    def test_planejamento_organizado_notifica_admin_e_passageiro(self):
         from app.notifications.notificadores import DatabaseNotificador
         DatabaseNotificador().atualizar('PLANEJAMENTO_ORGANIZADO', {'data': '2026-06-16'})
-        n = Notificacao.objects.get()
-        self.assertEqual(n.destinatario, 'admin')
-        self.assertIn('2026-06-16', n.mensagem)
+        destinatarios = set(Notificacao.objects.values_list('destinatario', flat=True))
+        self.assertEqual(destinatarios, {'admin', 'passageiro'})
+        self.assertEqual(Notificacao.objects.count(), 2)
+        for n in Notificacao.objects.all():
+            self.assertIn('2026-06-16', n.mensagem)
 
     def test_planejamento_fechado_cria_notificacao_para_passageiro(self):
         from app.notifications.notificadores import DatabaseNotificador
@@ -261,13 +262,14 @@ class DatabaseNotificadorTest(TestCase):
         n = Notificacao.objects.get()
         self.assertEqual(n.destinatario, 'passageiro')
 
-    def test_embarque_registrado_cria_notificacao_para_admin(self):
+    def test_embarque_registrado_nao_gera_notificacao(self):
+        # Embarque deixou de notificar: era ruído (uma notificação por presença
+        # marcada). O evento ainda é emitido, mas não é persistido.
         from app.notifications.notificadores import DatabaseNotificador
         DatabaseNotificador().atualizar('EMBARQUE_REGISTRADO', {
             'data': '2026-06-16', 'id_passageiro': 1, 'tipo': 'ida',
         })
-        n = Notificacao.objects.get()
-        self.assertEqual(n.destinatario, 'admin')
+        self.assertEqual(Notificacao.objects.count(), 0)
 
     def test_evento_desconhecido_nao_cria_notificacao(self):
         from app.notifications.notificadores import DatabaseNotificador
@@ -275,9 +277,9 @@ class DatabaseNotificadorTest(TestCase):
         self.assertEqual(Notificacao.objects.count(), 0)
 
 
-# ---------------------------------------------------------------------------
+
 # ConfirmacaoViewSet — isolamento por papel e unicidade
-# ---------------------------------------------------------------------------
+
 
 class ConfirmacaoViewSetTest(TestCase):
 
@@ -358,9 +360,9 @@ class ConfirmacaoViewSetTest(TestCase):
         self.assertTrue(conf.presenca_ida)  # não deve ter sido zerada
 
 
-# ---------------------------------------------------------------------------
+
 # UsuarioViewSet — criar motorista e passageiro
-# ---------------------------------------------------------------------------
+
 
 class CriarUsuarioTest(TestCase):
 
@@ -418,9 +420,9 @@ class CriarUsuarioTest(TestCase):
         self.assertEqual(resp.status_code, 400)
 
 
-# ---------------------------------------------------------------------------
+
 # PlanejamentoViewSet — notificação ao fechar planejamento
-# ---------------------------------------------------------------------------
+
 
 class PlanejamentoFechamentoTest(TestCase):
 
@@ -442,9 +444,9 @@ class PlanejamentoFechamentoTest(TestCase):
         self.assertEqual(Notificacao.objects.count(), 0)
 
 
-# ---------------------------------------------------------------------------
+
 # NotificacaoViewSet — filtragem por papel do usuário
-# ---------------------------------------------------------------------------
+
 
 class NotificacaoViewSetTest(TestCase):
 

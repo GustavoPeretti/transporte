@@ -28,9 +28,9 @@ export default function MotoristaPage() {
   const hojeISO = toISODate(new Date())
 
   const [carregando, setCarregando] = useState(true)
-  const [aba, setAba] = useState('veiculo')      // 'veiculo' | 'ida' | 'volta'
+  const [aba, setAba] = useState('veiculo')
   const [qrAberto, setQrAberto] = useState(false)
-  const [qrFeedback, setQrFeedback] = useState(null) // { tipo: 'ok'|'erro', msg }
+  const [qrFeedback, setQrFeedback] = useState(null)
   const [qrAba, setQrAba] = useState('ida')
 
   const [planejamentos, setPlanejamentos] = useState([])
@@ -123,9 +123,8 @@ export default function MotoristaPage() {
     return grupos
   }
 
-  // Registra o embarque via rota especial. O backend só MARCA presença (não desmarca).
-  // Manual: envia o id do passageiro. Via QR: envia o token assinado e o backend
-  // devolve o id resolvido para atualizar a linha correta.
+  // Registra presença (o backend só marca, nunca desmarca). Via QR usa o id
+  // resolvido pelo backend a partir do token; manual usa o id enviado.
   const aplicarEmbarque = useCallback(
     async ({ perfilId, qrToken, tipo }) => {
       if (!planHoje) return
@@ -158,7 +157,6 @@ export default function MotoristaPage() {
     [planHoje, perfisPassageiro, passageirosIda, passageirosVolta],
   )
 
-  // Scanner: o QR da carteirinha carrega um token assinado; o backend valida.
   const handleQrScan = useCallback(
     async (texto) => {
       setQrAberto(false)

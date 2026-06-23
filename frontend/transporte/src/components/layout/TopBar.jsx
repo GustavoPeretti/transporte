@@ -82,9 +82,8 @@ export default function TopBar({ title }) {
   const [painelAberto, setPainelAberto] = useState(false)
   const painelRef = useRef(null)
 
-  // Carrega notificações apenas ao abrir o painel.
+  // Carrega ao montar e ao abrir o painel (atualiza contador e lista).
   useEffect(() => {
-    if (!painelAberto) return
     notificacoesService.listar().then(setNotificacoes).catch(() => {})
   }, [painelAberto])
 

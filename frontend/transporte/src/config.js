@@ -1,10 +1,6 @@
-// Configurações globais do frontend.
-//
-// Em desenvolvimento, o Vite faz proxy de /api e /media para o backend Django
-// (ver vite.config.js), então as chamadas são same-origin e não exigem CORS.
+// Em dev o Vite faz proxy de /api e /media para o Django (same-origin, sem CORS).
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api'
 
-// Papéis de usuário usados no roteamento e na exibição das telas.
 export const ROLES = {
   ADMIN: 'admin',
   MOTORISTA: 'motorista',

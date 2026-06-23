@@ -19,9 +19,7 @@ class RegistroEmbarqueStatus(Enum):
     JA_EMBARCADO = 4
 
 
-# ============================================================
 # PATTERN: OBSERVER — Subject
-# ============================================================
 class ConfirmacaoService(NotificacaoSubject):
 
     def __init__(self):

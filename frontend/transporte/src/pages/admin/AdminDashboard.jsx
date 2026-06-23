@@ -135,7 +135,7 @@ export default function AdminDashboard() {
     return confirmacoes.filter((c) => c.planejamento === planSelecionado.id && c.ida).length
   }, [confirmacoes, planSelecionado])
 
-  // Passageiros do dia enriquecidos com nome e instituição para lista e PDF.
+  // Passageiros do dia com nome e instituição (lista e PDF).
   const passageirosDoDia = useMemo(() => {
     if (!planSelecionado) return []
     return confirmacoes
@@ -154,7 +154,6 @@ export default function AdminDashboard() {
       })
   }, [confirmacoes, planSelecionado, perfisPassageiro, usuarios, instituicoes])
 
-  // Passageiros agrupados por instituição (para visualização e PDF).
   const gruposPorInstituicao = useMemo(() => {
     const grupos = {}
     passageirosDoDia.forEach((p) => {
@@ -274,7 +273,6 @@ export default function AdminDashboard() {
     let y = 40
 
     Object.entries(gruposPorInstituicao).forEach(([inst, lista]) => {
-      // Cabeçalho da instituição
       doc.setFontSize(11)
       doc.setFont('helvetica', 'bold')
       doc.setTextColor(30)
@@ -443,7 +441,7 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      {/* Modal: criar motorista ou passageiro em um único formulário */}
+      {/* Modal: criar usuário */}
       <CriarUsuarioModal
         open={criarUsuarioAberto}
         onClose={() => setCriarUsuarioAberto(false)}
@@ -451,7 +449,7 @@ export default function AdminDashboard() {
         onCriado={recarregarUsuarios}
       />
 
-      {/* Modal: listar e deletar usuários */}
+      {/* Modal: gerenciar usuários */}
       <GerenciarUsuariosModal
         open={gerenciarUsuariosAberto}
         onClose={() => setGerenciarUsuariosAberto(false)}
@@ -461,7 +459,7 @@ export default function AdminDashboard() {
         onDeletado={handleDeletarUsuario}
       />
 
-      {/* Modal: lista de passageiros com visualização e geração de PDF */}
+      {/* Modal: lista de passageiros / PDF */}
       <Modal
         open={listaAberta}
         onClose={() => setListaAberta(false)}

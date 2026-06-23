@@ -1,10 +1,7 @@
 import { API_BASE_URL } from '../config'
 
-// Cliente HTTP fino sobre o fetch, centralizando base URL, headers,
-// CSRF e tratamento de erros para toda a camada de serviços.
-//
-// Autenticação é por cookie de sessão httpOnly (enviado automaticamente via
-// `credentials: 'include'`). Nenhum token trafega/é guardado em JavaScript.
+// Cliente HTTP sobre fetch: base URL, headers, CSRF e erros para os serviços.
+// Auth por cookie de sessão httpOnly (via `credentials: 'include'`); nenhum token em JS.
 
 function getCsrfToken() {
   const match = document.cookie.match(/(^|;)\s*csrftoken=([^;]+)/)
@@ -28,7 +25,8 @@ async function request(path, { method = 'GET', body, headers } = {}) {
     ...headers,
   }
 
-  if (method !== 'GET' && method !== 'HEAD' && !isFormData) {
+  // CSRF em todo método mutante (inclusive FormData).
+  if (method !== 'GET' && method !== 'HEAD') {
     const csrfToken = await ensureCsrfToken()
     if (csrfToken) {
       defaultHeaders['X-CSRFToken'] = csrfToken
@@ -42,9 +40,7 @@ async function request(path, { method = 'GET', body, headers } = {}) {
     body: isFormData ? body : body != null ? JSON.stringify(body) : undefined,
   })
 
-  // Sessão ausente/expirada (ex.: sessão antiga em localStorage de antes da
-  // migração de auth): limpa o estado local e volta ao login, evitando a
-  // sensação de "tela logada que não salva nada".
+  // Sessão ausente/expirada: limpa o estado local e volta ao login.
   if (res.status === 401 && !path.startsWith('/auth/')) {
     localStorage.removeItem('auth_session')
     if (!window.location.pathname.startsWith('/login')) {

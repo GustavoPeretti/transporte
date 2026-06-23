@@ -50,12 +50,8 @@ export default function QrScanner({ onScan }) {
         <p className="rounded-xl bg-red-50 px-4 py-3 text-center text-sm text-red-600">{erro}</p>
       )}
 
-      {/*
-        O container SEMPRE está no DOM e nunca usa display:none.
-        O html5-qrcode mede offsetWidth/offsetHeight ao inicializar — se o
-        elemento estiver oculto com display:none essas medidas retornam 0 e
-        o vídeo é criado sem dimensões, ficando invisível mesmo após aparecer.
-      */}
+      {/* Nunca usar display:none aqui: o html5-qrcode mede o elemento ao iniciar
+          e, se oculto, cria o vídeo com dimensão 0. */}
       <div
         id={SCANNER_ID}
         className="overflow-hidden rounded-xl"
