@@ -13,7 +13,22 @@ import { planejamentosService } from '../../services/planejamentos'
 import { alocacoesService } from '../../services/alocacoes'
 import { veiculosService, TIPO_VEICULO_LABEL } from '../../services/veiculos'
 import { perfisService } from '../../services/perfis'
-import { WEEKDAYS_SHORT_PT, formatDayMonth, formatTime, isSameDay, toISODate } from '../../lib/dates'
+import { WEEKDAYS_PT, WEEKDAYS_SHORT_PT, formatDayMonth, formatTime, isSameDay, parseISODate, toISODate } from '../../lib/dates'
+
+// Pontos de embarque disponíveis (placeholder enquanto não vêm do backend).
+const ENDERECOS_EMBARQUE = ['Praça', 'Fórum', 'Portal']
+
+// Deriva um ponto de embarque estável a partir da alocação do veículo.
+function enderecoEmbarque(aloc) {
+  if (!aloc) return null
+  return ENDERECOS_EMBARQUE[aloc.id % ENDERECOS_EMBARQUE.length]
+}
+
+// Nome do dia da semana (ex.: "Segunda") a partir de uma string ISO ou Date.
+function nomeDiaSemana(data) {
+  const d = typeof data === 'string' ? parseISODate(data) : data
+  return WEEKDAYS_PT[d.getDay()]
+}
 
 export default function PassageiroPage() {
   const { sessao } = useAuth()
@@ -119,25 +134,61 @@ export default function PassageiroPage() {
   return (
     <AppShell title="Passageiro">
       <div className="space-y-4">
-        {/* Embarque do dia selecionado */}
-        <Card title={`Embarque do dia · ${formatDayMonth(selecionado)}`}>
-          {embarqueDoDia ? (
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-lg font-semibold text-slate-800">
-                  {TIPO_VEICULO_LABEL[embarqueDoDia.veiculo?.tipo]} às{' '}
+        {/* Banner do embarque do dia selecionado */}
+        {embarqueDoDia ? (
+          <div className="overflow-hidden rounded-2xl bg-gradient-to-r from-brand-600 to-brand-500 text-white shadow-sm">
+            <div className="flex items-center justify-between gap-4 px-5 py-4">
+              <div className="min-w-0">
+                <p className="text-xs font-medium uppercase tracking-wide text-brand-100">
+                  Seu embarque
+                </p>
+                <p className="mt-1 text-lg font-semibold capitalize">
+                  {nomeDiaSemana(selecionado)} · {formatDayMonth(selecionado)}
+                </p>
+                <p className="mt-0.5 truncate text-sm text-brand-100">
+                  {TIPO_VEICULO_LABEL[embarqueDoDia.veiculo?.tipo]}
+                  {embarqueDoDia.veiculo?.modelo ? ` · ${embarqueDoDia.veiculo.modelo}` : ''}
+                </p>
+              </div>
+              <div className="shrink-0 text-right">
+                <p className="text-2xl font-bold tabular-nums leading-none">
                   {formatTime(embarqueDoDia.aloc.embarque)}
                 </p>
-                <p className="text-sm text-slate-500">{embarqueDoDia.veiculo?.modelo}</p>
+                <p className="mt-1 text-xs text-brand-100">Saída</p>
               </div>
-              <Badge color="brand">Confirmado</Badge>
             </div>
-          ) : (
-            <p className="text-sm text-slate-500">
+            <div className="flex items-center gap-1.5 border-t border-white/20 bg-white/10 px-5 py-2 text-sm">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+                className="size-4 shrink-0 text-brand-100"
+                aria-hidden="true"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M9.69 18.933l.003.001C9.89 19.02 10 19 10 19s.11.02.308-.066l.002-.001.006-.003.018-.008a5.741 5.741 0 00.281-.14c.186-.096.446-.24.757-.433.62-.384 1.445-.966 2.274-1.765C15.302 14.988 17 12.493 17 9A7 7 0 103 9c0 3.492 1.698 5.988 3.355 7.584a13.731 13.731 0 002.273 1.765 11.842 11.842 0 00.976.544l.062.029.018.008.006.003zM10 11.25a2.25 2.25 0 100-4.5 2.25 2.25 0 000 4.5z"
+                  clipRule="evenodd"
+                />
+              </svg>
+              <span className="truncate">
+                Ponto de embarque: <span className="font-semibold">{enderecoEmbarque(embarqueDoDia.aloc)}</span>
+              </span>
+            </div>
+          </div>
+        ) : (
+          <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-5 py-4">
+            <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
+              Seu embarque
+            </p>
+            <p className="mt-1 text-sm font-medium capitalize text-slate-600">
+              {nomeDiaSemana(selecionado)} · {formatDayMonth(selecionado)}
+            </p>
+            <p className="mt-0.5 text-sm text-slate-400">
               Nenhum embarque alocado para este dia.
             </p>
-          )}
-        </Card>
+          </div>
+        )}
 
         {/* Grade semanal de confirmações — layout integrado */}
         <GradeSemana
